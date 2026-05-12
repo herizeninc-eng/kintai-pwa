@@ -655,7 +655,8 @@
   updateClock();
 
   function setTodayMin() {
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const el = document.getElementById('apply-date');
     el.min = today;
     el.value = today;
@@ -663,7 +664,8 @@
 
   // ======== 打刻状態の保存・復元（0時にリセット） ========
   function savePunchState() {
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const state = {
       date:       today,
       checkin:    document.getElementById('status-checkin').textContent,
@@ -682,7 +684,8 @@
     const saved = localStorage.getItem('punchState_' + currentUser.id);
     if (!saved) return;
     const state = JSON.parse(saved);
-    const today = new Date().toISOString().split('T')[0];
+    const nowL = new Date();
+    const today = `${nowL.getFullYear()}-${String(nowL.getMonth()+1).padStart(2,'0')}-${String(nowL.getDate()).padStart(2,'0')}`;
 
     // 今日のデータのみ復元（0時を過ぎたら無視）
     if (state.date !== today) {
@@ -871,7 +874,8 @@
     if (!selectedApplyType) { showToast('申請種別を選択してください'); return; }
     const dateVal = document.getElementById('apply-date').value;
     if (!dateVal) { showToast('申請日を選択してください'); return; }
-    const today = new Date().toISOString().split('T')[0];
+    const nowA = new Date();
+    const today = `${nowA.getFullYear()}-${String(nowA.getMonth()+1).padStart(2,'0')}-${String(nowA.getDate()).padStart(2,'0')}`;
     if (dateVal < today) { showToast('本日以降の日付を選択してください'); return; }
     const note = document.getElementById('apply-note').value.trim();
     document.getElementById('am-type').textContent = selectedApplyType;
@@ -980,6 +984,27 @@
       showToast('時間外移動を終了しました（' + mins + '分）');
       moveStart = null;
     }
+  }
+
+  // デバッグ用：打刻データ削除
+  function clearDebugData() {
+    if (!confirm('本日の打刻データを削除しますか？')) return;
+    if (currentUser) localStorage.removeItem('punchState_' + currentUser.id);
+    document.getElementById('status-checkin').textContent  = '──';
+    document.getElementById('status-checkout').textContent = '──';
+    document.getElementById('status-checkin').className  = 'status-value';
+    document.getElementById('status-checkout').className = 'status-value';
+    document.getElementById('btn-checkin').disabled  = false;
+    document.getElementById('btn-checkout').disabled = false;
+    document.getElementById('history-list').innerHTML =
+      '<div style="color:var(--muted);font-size:13px;padding:8px 0">まだ打刻がありません</div>';
+    document.getElementById('break-time').textContent = '──';
+    document.getElementById('move-time').textContent  = '──';
+    document.getElementById('break-card').classList.remove('on-break');
+    document.getElementById('move-card').classList.remove('on-move');
+    document.getElementById('break-pill').textContent = 'OFF';
+    document.getElementById('move-pill').textContent  = 'OFF';
+    showToast('打刻データを削除しました');
   }
 
   document.getElementById('emp-id').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
