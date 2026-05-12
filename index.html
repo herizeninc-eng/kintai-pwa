@@ -316,6 +316,66 @@
   @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
   @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes shake   { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  @keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+  /* ======== 特殊トグルボタン ======== */
+  .toggle-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .toggle-card {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; flex-direction: column; gap: 8px;
+    user-select: none;
+  }
+  .toggle-card:active { transform: scale(0.97); }
+
+  .toggle-card-top {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .toggle-icon { font-size: 22px; line-height: 1; color: var(--muted); flex-shrink: 0; }
+  .toggle-pill {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+    padding: 3px 8px; border-radius: 20px;
+    background: var(--surface2); color: var(--muted);
+    border: 1px solid var(--border); transition: all 0.2s;
+  }
+  .toggle-card-name {
+    font-size: 12px; font-weight: 700; color: var(--muted); transition: color 0.2s;
+  }
+  .toggle-card-desc { font-size: 11px; color: var(--muted); line-height: 1.4; opacity: 0.7; }
+  .toggle-time {
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    color: var(--muted); min-height: 18px; transition: color 0.2s;
+  }
+
+  /* ON状態 - 規定外休憩（アンバー） */
+  .toggle-card.on-break {
+    background: rgba(229,168,75,0.08);
+    border-color: rgba(229,168,75,0.4);
+  }
+  .toggle-card.on-break .toggle-pill {
+    background: rgba(229,168,75,0.15); color: var(--amber);
+    border-color: rgba(229,168,75,0.4);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  .toggle-card.on-break .toggle-card-name { color: var(--amber); }
+  .toggle-card.on-break .toggle-icon { color: var(--amber); }
+  .toggle-card.on-break .toggle-time { color: var(--amber); }
+
+  /* ON状態 - 時間外移動（アクセント） */
+  .toggle-card.on-move {
+    background: rgba(91,110,245,0.08);
+    border-color: rgba(91,110,245,0.4);
+  }
+  .toggle-card.on-move .toggle-pill {
+    background: rgba(91,110,245,0.15); color: var(--accent2);
+    border-color: rgba(91,110,245,0.4);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  .toggle-card.on-move .toggle-card-name { color: var(--accent2); }
+  .toggle-card.on-move .toggle-icon { color: var(--accent2); }
+  .toggle-card.on-move .toggle-time { color: var(--accent2); }
 </style>
 </head>
 <body>
@@ -375,8 +435,9 @@
   <div>
     <div class="section-label">種別</div>
     <div class="type-grid">
-      <button class="type-btn wide selected" data-type="通常"     onclick="selectType(this)">通常</button>
-      <button class="type-btn wide"          data-type="早出"     onclick="selectType(this)">早出</button>
+      <button class="type-btn selected" style="grid-column:1/-1" data-type="通常" onclick="selectType(this)">通常</button>
+      <button class="type-btn"               data-type="早出"     onclick="selectType(this)">早出</button>
+      <button class="type-btn"               data-type="遅出"     onclick="selectType(this)">遅出</button>
       <button class="type-btn"               data-type="有給(午前)" onclick="selectType(this)">有給(午前)</button>
       <button class="type-btn"               data-type="有給(午後)" onclick="selectType(this)">有給(午後)</button>
       <button class="type-btn"               data-type="振休(午前)" onclick="selectType(this)">振休(午前)</button>
@@ -398,6 +459,60 @@
       <span>退勤</span>
       <span class="btn-sub">タップして打刻</span>
     </button>
+  </div>
+
+  <!-- 規定外休憩 / 時間外移動 トグル -->
+  <div class="toggle-row">
+
+    <!-- 規定外休憩 -->
+    <div class="toggle-card" id="break-card" onclick="toggleBreak()">
+      <div class="toggle-card-top">
+        <svg class="toggle-icon" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- カップ本体 -->
+          <rect x="4" y="12" width="16" height="12" rx="2" fill="currentColor" opacity="0.9"/>
+          <!-- ハンドル -->
+          <path d="M20 14.5 Q26 14.5 26 18.5 Q26 22.5 20 22.5" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+          <!-- 蒸気1 -->
+          <path d="M9 9 Q10.5 6.5 9 4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="0.6"/>
+          <!-- 蒸気2 -->
+          <path d="M14 9 Q15.5 6.5 14 4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="0.6"/>
+          <!-- 受け皿 -->
+          <rect x="2" y="24" width="20" height="2.5" rx="1.2" fill="currentColor" opacity="0.7"/>
+        </svg>
+        <span class="toggle-pill" id="break-pill">OFF</span>
+      </div>
+      <div class="toggle-card-name">規定外休憩</div>
+      <div class="toggle-card-desc">私用外出・休憩の開始／終了</div>
+      <div class="toggle-time" id="break-time">──</div>
+    </div>
+
+    <!-- 時間外移動 -->
+    <div class="toggle-card" id="move-card" onclick="toggleMove()">
+      <div class="toggle-card-top">
+        <svg class="toggle-icon" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- 車体 -->
+          <rect x="1" y="10" width="26" height="12" rx="2" fill="currentColor" opacity="0.9"/>
+          <!-- 屋根（キャブオーバー形） -->
+          <path d="M3 10 L3 6 Q3 4 5 4 L22 4 Q26 4 27 8 L27 10Z" fill="currentColor"/>
+          <!-- フロントガラス -->
+          <path d="M22 4.5 L26.5 9.5" stroke="var(--bg)" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+          <!-- 左タイヤ -->
+          <circle cx="7" cy="22" r="3.5" fill="var(--surface2)" stroke="currentColor" stroke-width="2"/>
+          <circle cx="7" cy="22" r="1.2" fill="currentColor" opacity="0.6"/>
+          <!-- 右タイヤ -->
+          <circle cx="21" cy="22" r="3.5" fill="var(--surface2)" stroke="currentColor" stroke-width="2"/>
+          <circle cx="21" cy="22" r="1.2" fill="currentColor" opacity="0.6"/>
+          <!-- サイドウィンドウ -->
+          <rect x="4" y="6" width="5" height="3.5" rx="0.8" fill="var(--surface2)" opacity="0.6"/>
+          <rect x="11" y="6" width="5" height="3.5" rx="0.8" fill="var(--surface2)" opacity="0.6"/>
+        </svg>
+        <span class="toggle-pill" id="move-pill">OFF</span>
+      </div>
+      <div class="toggle-card-name">時間外移動</div>
+      <div class="toggle-card-desc">18時以降の移動（残業対象外）</div>
+      <div class="toggle-time" id="move-time">──</div>
+    </div>
+
   </div>
 
   <!-- 稼働情報 -->
@@ -677,6 +792,74 @@
     t.textContent = '✓ ' + msg;
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // ======== 規定外休憩 ========
+  let breakOn = false;
+  let breakStart = null;
+  let breakSessions = [];
+
+  function toggleBreak() {
+    const card = document.getElementById('break-card');
+    const pill = document.getElementById('break-pill');
+    const timeEl = document.getElementById('break-time');
+    const now = new Date();
+    const t = now.toLocaleTimeString('ja-JP');
+
+    if (!breakOn) {
+      // ON にする
+      breakOn = true;
+      breakStart = now;
+      card.classList.add('on-break');
+      pill.textContent = '計測中';
+      timeEl.textContent = '開始 ' + t.slice(0,5);
+      addHistory('規定外休憩 開始', '', t, '#e5a84b');
+      showToast('規定外休憩を開始しました（' + t.slice(0,5) + '）');
+    } else {
+      // OFF にする
+      breakOn = false;
+      const mins = Math.round((now - breakStart) / 60000);
+      breakSessions.push({ start: breakStart, end: now, mins });
+      card.classList.remove('on-break');
+      pill.textContent = 'OFF';
+      timeEl.textContent = '計 ' + mins + '分';
+      addHistory('規定外休憩 終了', mins + '分', t, '#e5a84b');
+      showToast('規定外休憩を終了しました（' + mins + '分）');
+      breakStart = null;
+    }
+  }
+
+  // ======== 時間外移動 ========
+  let moveOn = false;
+  let moveStart = null;
+  let moveSessions = [];
+
+  function toggleMove() {
+    const card = document.getElementById('move-card');
+    const pill = document.getElementById('move-pill');
+    const timeEl = document.getElementById('move-time');
+    const now = new Date();
+    const t = now.toLocaleTimeString('ja-JP');
+
+    if (!moveOn) {
+      moveOn = true;
+      moveStart = now;
+      card.classList.add('on-move');
+      pill.textContent = '計測中';
+      timeEl.textContent = '開始 ' + t.slice(0,5);
+      addHistory('時間外移動 開始', '', t, '#7b8ef7');
+      showToast('時間外移動を開始しました（' + t.slice(0,5) + '）');
+    } else {
+      moveOn = false;
+      const mins = Math.round((now - moveStart) / 60000);
+      moveSessions.push({ start: moveStart, end: now, mins });
+      card.classList.remove('on-move');
+      pill.textContent = 'OFF';
+      timeEl.textContent = '計 ' + mins + '分';
+      addHistory('時間外移動 終了', mins + '分', t, '#7b8ef7');
+      showToast('時間外移動を終了しました（' + mins + '分）');
+      moveStart = null;
+    }
   }
 
   document.getElementById('emp-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
