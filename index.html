@@ -734,6 +734,7 @@
         document.getElementById('pm-name').textContent   = currentUser.name;
         document.getElementById('am-name').textContent   = currentUser.name;
         setTodayMin();
+        loadPunchState();
       } else {
         err.classList.remove('show');
         void err.offsetWidth;
