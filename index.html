@@ -661,6 +661,51 @@
     el.value = today;
   }
 
+  // ======== 打刻状態の保存・復元（0時にリセット） ========
+  function savePunchState() {
+    const today = new Date().toISOString().split('T')[0];
+    const state = {
+      date:       today,
+      checkin:    document.getElementById('status-checkin').textContent,
+      checkout:   document.getElementById('status-checkout').textContent,
+      checkinDone:  document.getElementById('btn-checkin').disabled,
+      checkoutDone: document.getElementById('btn-checkout').disabled,
+      history:    document.getElementById('history-list').innerHTML,
+      breakTime:  document.getElementById('break-time').textContent,
+      moveTime:   document.getElementById('move-time').textContent,
+    };
+    localStorage.setItem('punchState_' + currentUser.id, JSON.stringify(state));
+  }
+
+  function loadPunchState() {
+    if (!currentUser) return;
+    const saved = localStorage.getItem('punchState_' + currentUser.id);
+    if (!saved) return;
+    const state = JSON.parse(saved);
+    const today = new Date().toISOString().split('T')[0];
+
+    // 今日のデータのみ復元（0時を過ぎたら無視）
+    if (state.date !== today) {
+      localStorage.removeItem('punchState_' + currentUser.id);
+      return;
+    }
+
+    // 状態を復元
+    if (state.checkin !== '──') {
+      document.getElementById('status-checkin').textContent = state.checkin;
+      document.getElementById('status-checkin').className   = 'status-value recorded';
+    }
+    if (state.checkout !== '──') {
+      document.getElementById('status-checkout').textContent = state.checkout;
+      document.getElementById('status-checkout').className   = 'status-value recorded';
+    }
+    document.getElementById('btn-checkin').disabled  = state.checkinDone;
+    document.getElementById('btn-checkout').disabled = state.checkoutDone;
+    if (state.history) document.getElementById('history-list').innerHTML = state.history;
+    if (state.breakTime && state.breakTime !== '──') document.getElementById('break-time').textContent = state.breakTime;
+    if (state.moveTime  && state.moveTime  !== '──') document.getElementById('move-time').textContent  = state.moveTime;
+  }
+
   // GAS認証（社員番号でマスタ照合）
   async function doLogin() {
     const id  = document.getElementById('emp-id').value.trim();
@@ -816,6 +861,7 @@
         body:   formData,
       });
       showToast(`${label}打刻しました（${t.slice(0,5)}）`);
+      savePunchState();  // 打刻状態を保存
     } catch(e) {
       showToast('⚠️ 通信エラー。後で再送してください。');
     }
