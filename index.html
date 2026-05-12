@@ -385,18 +385,15 @@
   <div>
     <div class="app-icon">⏱</div>
     <div class="login-title">勤務打刻</div>
-    <div class="login-subtitle">社員番号とパスワードでログイン</div>
+    <div class="login-subtitle">社員番号を入力してログイン</div>
   </div>
   <div class="login-form">
     <div class="field-group">
       <div class="field-label">社員番号</div>
       <input class="field-input" id="emp-id" type="text" inputmode="numeric" placeholder="例：00025" autocomplete="off">
     </div>
-    <div class="field-group">
-      <div class="field-label">パスワード</div>
-      <input class="field-input" id="emp-pw" type="password" placeholder="パスワードを入力">
-    </div>
-    <div class="login-error" id="login-error">社員番号またはパスワードが正しくありません</div>
+
+    <div class="login-error" id="login-error">社員番号が見つかりません</div>
     <button class="login-btn" onclick="doLogin()">ログイン</button>
   </div>
 </div>
@@ -623,9 +620,23 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const EMPLOYEES = {
-    '00025': { pw: '1234', name: '金川 政嗣' },
-    '00001': { pw: 'pass', name: '山田 太郎'  },
+  // GAS WebアプリURL（ログイン認証用）
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbwqHY61IztIFfffexd1kx4SL_K6ii5gaLjujCy0jasF_4mmGyU6zdxmzk5yAGxIB8nLyA/exec';
+
+  // Googleフォーム送信URL（打刻用・アカウント不要）
+  const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfh5yZ0xR3-GcQ1si6qbtCiik2pSC7dWJEIsRAYK6a-CytwJw/formResponse';
+  const FORM_ENTRIES = {
+    empId:     'entry.822262813',
+    action:    'entry.2143836822',
+    type:      'entry.2065196002',
+    time:      'entry.1595647321',
+    date:      'entry.2088951198',
+    dept:      'entry.52425296',
+    content:   'entry.1725436829',
+    breakMins: 'entry.394595264',
+    moveMins:  'entry.1641896954',
+    lat:       'entry.1289911194',
+    lng:       'entry.1823029313',
   };
 
   let currentUser = null;
@@ -650,24 +661,43 @@
     el.value = today;
   }
 
-  function doLogin() {
+  // GAS認証（社員番号でマスタ照合）
+  async function doLogin() {
     const id  = document.getElementById('emp-id').value.trim();
-    const pw  = document.getElementById('emp-pw').value;
     const err = document.getElementById('login-error');
-    if (EMPLOYEES[id] && EMPLOYEES[id].pw === pw) {
-      currentUser = { id, ...EMPLOYEES[id] };
-      err.classList.remove('show');
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('punch-screen').style.display = 'flex';
-      document.getElementById('disp-name').textContent = currentUser.name;
-      document.getElementById('disp-code').textContent = `No. ${id}`;
-      document.getElementById('pm-name').textContent   = currentUser.name;
-      document.getElementById('am-name').textContent   = currentUser.name;
-      setTodayMin();
-    } else {
+    const btn = document.querySelector('.login-btn');
+
+    if (!id) { err.classList.add('show'); return; }
+
+    btn.textContent = '確認中...';
+    btn.disabled = true;
+
+    try {
+      const res  = await fetch(GAS_URL + '?empId=' + encodeURIComponent(id));
+      const data = await res.json();
+
+      if (data.status === 'ok') {
+        currentUser = { id: data.empId, name: data.empName, dept: data.dept };
+        err.classList.remove('show');
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('punch-screen').style.display = 'flex';
+        document.getElementById('disp-name').textContent = currentUser.name;
+        document.getElementById('disp-code').textContent = `No. ${id}`;
+        document.getElementById('pm-name').textContent   = currentUser.name;
+        document.getElementById('am-name').textContent   = currentUser.name;
+        setTodayMin();
+      } else {
+        err.classList.remove('show');
+        void err.offsetWidth;
+        err.classList.add('show');
+      }
+    } catch(e) {
       err.classList.remove('show');
       void err.offsetWidth;
       err.classList.add('show');
+    } finally {
+      btn.textContent = 'ログイン';
+      btn.disabled = false;
     }
   }
 
@@ -675,7 +705,7 @@
     currentUser = null; selectedType = '通常'; selectedApplyType = null;
     document.getElementById('punch-screen').style.display = 'none';
     document.getElementById('login-screen').style.display = 'flex';
-    ['emp-id','emp-pw','work-dept','work-content','apply-note'].forEach(id => document.getElementById(id).value = '');
+    ['emp-id','work-dept','work-content','apply-note'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('status-checkin').textContent  = '──';
     document.getElementById('status-checkout').textContent = '──';
     document.getElementById('status-checkin').className  = 'status-value';
@@ -731,20 +761,64 @@
     document.getElementById('punch-modal').classList.add('show');
   }
 
-  function doPunch() {
+  async function doPunch() {
     const now   = new Date();
     const t     = now.toLocaleTimeString('ja-JP');
+    const d     = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
     const label = pendingAction === 'checkin' ? '出勤' : '退勤';
     const color = pendingAction === 'checkin' ? '#3dba7a' : '#e05a5a';
     const sid   = pendingAction === 'checkin' ? 'status-checkin' : 'status-checkout';
     const bid   = pendingAction === 'checkin' ? 'btn-checkin'    : 'btn-checkout';
+
+    // 位置情報取得
+    let lat = '', lng = '';
+    try {
+      const pos = await new Promise((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
+      );
+      lat = pos.coords.latitude.toFixed(6);
+      lng = pos.coords.longitude.toFixed(6);
+    } catch(e) { /* 位置情報取得失敗は無視 */ }
+
+    const dept    = document.getElementById('work-dept').value.trim();
+    const content = document.getElementById('work-content').value.trim();
+    const breakEl = document.getElementById('break-time').textContent;
+    const moveEl  = document.getElementById('move-time').textContent;
+    const breakMins = breakEl.includes('計') ? parseInt(breakEl.replace('計 ','').replace('分','')) : 0;
+    const moveMins  = moveEl.includes('計')  ? parseInt(moveEl.replace('計 ','').replace('分',''))  : 0;
+
+    // UI更新
     document.getElementById(sid).textContent = t.slice(0,5);
     document.getElementById(sid).className   = 'status-value recorded';
     document.getElementById(bid).disabled    = true;
     addHistory(label, selectedType, t, color);
     closeModal('punch-modal');
-    showToast(`${label}打刻しました（${t.slice(0,5)}）`);
-    // GASへの送信 → sendToGAS({ action: pendingAction, type: selectedType, time: t, ... });
+    showToast(`${label}打刻中...`);
+
+    // Googleフォームに送信（アカウント不要）
+    try {
+      const formData = new FormData();
+      formData.append(FORM_ENTRIES.empId,     currentUser.id);
+      formData.append(FORM_ENTRIES.action,    label);
+      formData.append(FORM_ENTRIES.type,      selectedType);
+      formData.append(FORM_ENTRIES.time,      t);
+      formData.append(FORM_ENTRIES.date,      d);
+      formData.append(FORM_ENTRIES.dept,      dept);
+      formData.append(FORM_ENTRIES.content,   content);
+      formData.append(FORM_ENTRIES.breakMins, breakMins);
+      formData.append(FORM_ENTRIES.moveMins,  moveMins);
+      formData.append(FORM_ENTRIES.lat,       lat);
+      formData.append(FORM_ENTRIES.lng,       lng);
+
+      await fetch(FORM_URL, {
+        method: 'POST',
+        mode:   'no-cors',
+        body:   formData,
+      });
+      showToast(`${label}打刻しました（${t.slice(0,5)}）`);
+    } catch(e) {
+      showToast('⚠️ 通信エラー。後で再送してください。');
+    }
   }
 
   function openApplyModal() {
@@ -862,7 +936,7 @@
     }
   }
 
-  document.getElementById('emp-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('emp-id').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
   document.getElementById('punch-modal').addEventListener('click', function(e) { if (e.target===this) closeModal('punch-modal'); });
   document.getElementById('apply-modal').addEventListener('click', function(e) { if (e.target===this) closeModal('apply-modal'); });
 </script>
