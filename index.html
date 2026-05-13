@@ -377,6 +377,29 @@
   .toggle-card.on-move .toggle-card-name { color: var(--accent2); }
   .toggle-card.on-move .toggle-icon { color: var(--accent2); }
   .toggle-card.on-move .toggle-time { color: var(--accent2); }
+
+  /* ======== 残業申請ボタン ======== */
+  .overtime-btn {
+    background: linear-gradient(145deg, rgba(159,122,240,0.12) 0%, rgba(91,110,245,0.08) 100%);
+    border: 1.5px solid rgba(159,122,240,0.35);
+    border-radius: var(--radius); color: var(--purple);
+    font-family: 'Noto Sans JP', sans-serif; font-size: 14px; font-weight: 700;
+    padding: 16px; cursor: pointer; width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: all 0.2s; box-shadow: 0 4px 16px var(--purple-glow);
+  }
+  .overtime-btn:active { transform: scale(0.98); opacity: 0.9; }
+  .overtime-btn-icon { font-size: 20px; line-height: 1; }
+  .overtime-btn-label { font-size: 15px; font-weight: 700; }
+  .overtime-btn-sub { font-size: 11px; font-weight: 400; opacity: 0.7; }
+  .field-input-time {
+    background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 15px;
+    padding: 13px 16px; outline: none; width: 100%; -webkit-appearance: none;
+    transition: border-color 0.2s, box-shadow 0.2s; color-scheme: dark;
+  }
+  .field-input-time:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-glow); }
 </style>
 </head>
 <body>
@@ -460,6 +483,15 @@
       <span class="btn-sub">タップして打刻</span>
     </button>
   </div>
+
+  <!-- 残業申請ボタン -->
+  <button class="overtime-btn" onclick="openOvertimeModal()">
+    <span class="overtime-btn-icon">⏰</span>
+    <div class="overtime-btn-text">
+      <span class="overtime-btn-label">残業申請</span>
+      <span class="overtime-btn-sub">18時以降の残業を上長に申請・報告</span>
+    </div>
+  </button>
 
   <!-- 規定外休憩 / 時間外移動 トグル -->
   <div class="toggle-row">
@@ -602,6 +634,29 @@
 </div>
 
 <!-- 打刻確認モーダル -->
+<!-- 残業申請モーダル -->
+<div class="modal-backdrop" id="overtime-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">残業申請</div>
+    <div class="modal-sub">内容を入力して上長に申請します</div>
+    <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:24px;">
+      <div>
+        <div class="field-label" style="margin-bottom:6px">想定残業時間（何時まで）</div>
+        <input class="field-input-time" id="overtime-until" type="time" value="19:00">
+      </div>
+      <div>
+        <div class="field-label" style="margin-bottom:6px">作業内容・理由（任意）</div>
+        <textarea class="work-input" id="overtime-reason" placeholder="例：顧客対応、月次報告書作成など" style="min-height:70px"></textarea>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal('overtime-modal')">キャンセル</button>
+      <button class="modal-confirm purple" onclick="doOvertime()">申請する</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="punch-modal">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -942,7 +997,7 @@
     showToast(`${selectedApplyType}の申請を送信中...`);
 
     try {
-      const res = await fetch(FORM_GAS_URL, {
+      const res = await fetch(GAS_URL, {
         method: 'POST',
         body: JSON.stringify({
           requestType: 'apply',
@@ -1109,6 +1164,53 @@
     document.getElementById('move-pill').textContent  = 'OFF';
     showToast('打刻データを削除しました');
   }
+
+  // ======== 残業申請 ========
+  function openOvertimeModal() {
+    if (!currentUser) { showToast('ログインしてください'); return; }
+    document.getElementById('overtime-modal').classList.add('show');
+  }
+
+  async function doOvertime() {
+    const untilTime = document.getElementById('overtime-until').value;
+    const reason    = document.getElementById('overtime-reason').value.trim();
+
+    if (!untilTime) { showToast('残業終了時間を入力してください'); return; }
+
+    closeModal('overtime-modal');
+    showToast('残業申請を送信中...');
+
+    const now = new Date();
+    const applyDate = now.getFullYear() + '/' +
+      String(now.getMonth()+1).padStart(2,'0') + '/' +
+      String(now.getDate()).padStart(2,'0');
+
+    try {
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          requestType: 'overtime',
+          empId:       currentUser.id,
+          empName:     currentUser.name,
+          dept:        currentUser.dept || '',
+          untilTime:   untilTime,
+          reason:      reason,
+          applyDate:   applyDate,
+        })
+      });
+      const data = await res.json();
+      showToast(data.status === 'ok'
+        ? '残業申請を送信しました（' + untilTime + 'まで）'
+        : '⚠️ 送信エラー：' + data.message
+      );
+    } catch(err) {
+      showToast('⚠️ 通信エラー。後で再送してください。');
+    }
+
+    document.getElementById('overtime-reason').value = '';
+  }
+
+  document.getElementById('overtime-modal').addEventListener('click', function(e) { if (e.target===this) closeModal('overtime-modal'); });
 
   document.getElementById('emp-id').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
   document.getElementById('punch-modal').addEventListener('click', function(e) { if (e.target===this) closeModal('punch-modal'); });
