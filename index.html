@@ -643,7 +643,23 @@
     <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:24px;">
       <div>
         <div class="field-label" style="margin-bottom:6px">想定残業時間（何時まで）</div>
-        <input class="field-input-time" id="overtime-until" type="time" value="19:00">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select class="work-input" id="overtime-until-h" style="-webkit-appearance:none;appearance:none;cursor:pointer;flex:1;text-align:center;">
+            <option value="18">18</option>
+            <option value="19" selected>19</option>
+            <option value="20">20</option>
+            <option value="21">21</option>
+            <option value="22">22</option>
+            <option value="23">23</option>
+          </select>
+          <span style="color:var(--muted);font-size:20px;font-weight:700;">:</span>
+          <select class="work-input" id="overtime-until-m" style="-webkit-appearance:none;appearance:none;cursor:pointer;flex:1;text-align:center;">
+            <option value="00" selected>00</option>
+            <option value="15">15</option>
+            <option value="30">30</option>
+            <option value="45">45</option>
+          </select>
+        </div>
       </div>
       <div>
         <div class="field-label" style="margin-bottom:6px">作業内容・理由（任意）</div>
@@ -997,7 +1013,7 @@
     showToast(`${selectedApplyType}の申請を送信中...`);
 
     try {
-      const res = await fetch(GAS_URL, {
+      const res = await fetch(FORM_GAS_URL, {
         method: 'POST',
         body: JSON.stringify({
           requestType: 'apply',
@@ -1166,13 +1182,40 @@
   }
 
   // ======== 残業申請 ========
+  let overtimeApplied = false;
+  let overtimeReminderShown = false;
+
+  // 18:30以降・退勤未打刻・残業申請未済なら1回だけポップアップ
+  function checkOvertimeReminder() {
+    if (!currentUser) return;
+    if (overtimeReminderShown) return;
+    if (overtimeApplied) return;
+    if (document.getElementById('btn-checkout').disabled) return;
+    const now = new Date();
+    if (now.getHours() > 18 || (now.getHours() === 18 && now.getMinutes() >= 30)) {
+      overtimeReminderShown = true;
+      showToast('⚠️ 18:30を過ぎています。残業申請をしてください。');
+    }
+  }
+  setInterval(checkOvertimeReminder, 60000);
+
+  function setOvertimeAppliedUI() {
+    const btn = document.querySelector('.overtime-btn');
+    btn.style.background = 'linear-gradient(145deg, rgba(61,186,122,0.12) 0%, rgba(61,186,122,0.08) 100%)';
+    btn.style.borderColor = 'rgba(61,186,122,0.35)';
+    btn.style.color = 'var(--green)';
+    btn.querySelector('.overtime-btn-icon').textContent = '✅';
+    btn.querySelector('.overtime-btn-label').textContent = '残業申請済み';
+    btn.querySelector('.overtime-btn-sub').textContent = '上長に申請・報告済みです';
+  }
+
   function openOvertimeModal() {
     if (!currentUser) { showToast('ログインしてください'); return; }
     document.getElementById('overtime-modal').classList.add('show');
   }
 
   async function doOvertime() {
-    const untilTime = document.getElementById('overtime-until').value;
+    const untilTime = document.getElementById('overtime-until-h').value + ':' + document.getElementById('overtime-until-m').value;
     const reason    = document.getElementById('overtime-reason').value.trim();
 
     if (!untilTime) { showToast('残業終了時間を入力してください'); return; }
@@ -1203,6 +1246,10 @@
         ? '残業申請を送信しました（' + untilTime + 'まで）'
         : '⚠️ 送信エラー：' + data.message
       );
+      if (data.status === 'ok') {
+        overtimeApplied = true;
+        setOvertimeAppliedUI();
+      }
     } catch(err) {
       showToast('⚠️ 通信エラー。後で再送してください。');
     }
