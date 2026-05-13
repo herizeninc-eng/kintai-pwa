@@ -921,12 +921,41 @@
 
   async function doPunch() {
     const now   = new Date();
-    const t     = now.toLocaleTimeString('ja-JP');
-    const d     = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
     const label = pendingAction === 'checkin' ? '出勤' : '退勤';
     const color = pendingAction === 'checkin' ? '#3dba7a' : '#e05a5a';
     const sid   = pendingAction === 'checkin' ? 'status-checkin' : 'status-checkout';
     const bid   = pendingAction === 'checkin' ? 'btn-checkin'    : 'btn-checkout';
+
+    // ── 打刻時刻補正 ──────────────────────────
+    const punchTime = new Date(now);
+    if (label === '出勤') {
+      if (selectedType === '早出') {
+        // 早出：15分単位切り捨て
+        punchTime.setMinutes(Math.floor(punchTime.getMinutes() / 15) * 15, 0, 0);
+      } else {
+        // 早出以外：9:00より前なら9:00に補正
+        const nine = new Date(now);
+        nine.setHours(9, 0, 0, 0);
+        if (punchTime < nine) {
+          punchTime.setHours(9, 0, 0, 0);
+        }
+      }
+    } else {
+      // 退勤：全種別15分単位切り上げ
+      const m = punchTime.getMinutes();
+      const rem = m % 15;
+      if (rem !== 0) {
+        punchTime.setMinutes(m + (15 - rem), 0, 0);
+      } else {
+        punchTime.setSeconds(0, 0);
+      }
+    }
+
+    const pad = n => String(n).padStart(2, '0');
+    const isCheckout = label === '退勤';
+    const displayH = (isCheckout && punchTime.getHours() < 6) ? punchTime.getHours() + 24 : punchTime.getHours();
+    const t = `${pad(displayH)}:${pad(punchTime.getMinutes())}:${pad(punchTime.getSeconds())}`;
+    const d = `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())}`;
 
     // 位置情報取得
     let lat = '', lng = '';
@@ -1151,10 +1180,13 @@
         document.getElementById('status-checkin').className   = 'status-value recorded';
         document.getElementById('btn-checkin').disabled       = true;
       }
-
-      // 退勤データがあれば反映
       if (data.checkout) {
-        document.getElementById('status-checkout').textContent = data.checkout.slice(0,5);
+        // 退勤時刻が6時未満なら29時表記に変換
+        const parts = data.checkout.split(':');
+        const h = parseInt(parts[0]);
+        const dispH = h < 6 ? h + 24 : h;
+        const checkoutDisp = String(dispH).padStart(2,'0') + ':' + parts[1];
+        document.getElementById('status-checkout').textContent = checkoutDisp;
         document.getElementById('status-checkout').className   = 'status-value recorded';
         document.getElementById('btn-checkout').disabled       = true;
       }
@@ -1313,6 +1345,23 @@
   }
 
   document.getElementById('overtime-modal').addEventListener('click', function(e) { if (e.target===this) closeModal('overtime-modal'); });
+
+  // 退勤時刻を29時表記に変換（6時未満は翌日扱いで+24）
+  function formatPunchTime(date, isCheckout) {
+    const h = date.getHours();
+    const m = date.getMinutes();
+    const s = date.getSeconds();
+    const pad = n => String(n).padStart(2, '0');
+    const displayH = (isCheckout && h < 6) ? h + 24 : h;
+    return `${pad(displayH)}:${pad(m)}:${pad(s)}`;
+  }
+  function formatPunchTimeShort(date, isCheckout) {
+    const h = date.getHours();
+    const m = date.getMinutes();
+    const pad = n => String(n).padStart(2, '0');
+    const displayH = (isCheckout && h < 6) ? h + 24 : h;
+    return `${pad(displayH)}:${pad(m)}`;
+  }
 
   document.getElementById('emp-id').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
   document.getElementById('punch-modal').addEventListener('click', function(e) { if (e.target===this) closeModal('punch-modal'); });
