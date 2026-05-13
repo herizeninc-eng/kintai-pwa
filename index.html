@@ -837,6 +837,7 @@
         document.getElementById('am-name').textContent   = currentUser.name;
         setTodayMin();
         loadPunchState();
+        loadOvertimeStateOnLogin();  // 残業申請状態を復元
         fetchTodayPunchStatus();  // サーバーから当日打刻状況を取得
       } else {
         err.classList.remove('show');
@@ -975,7 +976,13 @@
         body:   formData,
       });
       showToast(`${label}打刻しました（${t.slice(0,5)}）`);
-      savePunchState();  // 打刻状態を保存
+      savePunchState();
+      // 退勤打刻時は残業申請状態をリセット
+      if (label === '退勤') {
+        overtimeApplied = false;
+        if (currentUser) saveOvertimeState(currentUser.id, false);
+        resetOvertimeUI();
+      }
     } catch(e) {
       showToast('⚠️ 通信エラー。後で再送してください。');
     }
@@ -1185,7 +1192,64 @@
   let overtimeApplied = false;
   let overtimeReminderShown = false;
 
-  // 18:30以降・退勤未打刻・残業申請未済なら1回だけポップアップ
+  // 残業申請状態をlocalStorageに保存
+  function saveOvertimeState(empId, applied) {
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    localStorage.setItem('overtimeState_' + empId, JSON.stringify({ date: today, applied }));
+  }
+
+  // 残業申請状態をlocalStorageから復元
+  function loadOvertimeState(empId) {
+    const saved = localStorage.getItem('overtimeState_' + empId);
+    if (!saved) return false;
+    const state = JSON.parse(saved);
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    // 日付が変わっていたら無効
+    if (state.date !== today) {
+      localStorage.removeItem('overtimeState_' + empId);
+      return false;
+    }
+    return state.applied;
+  }
+
+  // 残業申請済みUIに変更
+  function setOvertimeAppliedUI() {
+    const btn = document.querySelector('.overtime-btn');
+    btn.style.background = 'linear-gradient(145deg, rgba(61,186,122,0.12) 0%, rgba(61,186,122,0.08) 100%)';
+    btn.style.borderColor = 'rgba(61,186,122,0.35)';
+    btn.style.color = 'var(--green)';
+    btn.querySelector('.overtime-btn-icon').textContent = '✅';
+    btn.querySelector('.overtime-btn-label').textContent = '残業申請済み';
+    btn.querySelector('.overtime-btn-sub').textContent = '上長に申請・報告済みです';
+  }
+
+  // 残業申請ボタンを初期状態に戻す
+  function resetOvertimeUI() {
+    const btn = document.querySelector('.overtime-btn');
+    btn.style.background = '';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    btn.querySelector('.overtime-btn-icon').textContent = '⏰';
+    btn.querySelector('.overtime-btn-label').textContent = '残業申請';
+    btn.querySelector('.overtime-btn-sub').textContent = '18時以降の残業を上長に申請・報告';
+  }
+
+  // ログイン時に残業申請状態を復元
+  function loadOvertimeStateOnLogin() {
+    overtimeApplied = loadOvertimeState(currentUser.id);
+    overtimeReminderShown = false; // ログインのたびにリセット
+    if (overtimeApplied) {
+      setOvertimeAppliedUI();
+    } else {
+      resetOvertimeUI();
+      // ログイン時点で既に18:30以降・退勤未打刻なら即チェック
+      checkOvertimeReminder();
+    }
+  }
+
+  // 18:30以降・退勤未打刻・残業申請未済なら1回だけトースト
   function checkOvertimeReminder() {
     if (!currentUser) return;
     if (overtimeReminderShown) return;
@@ -1198,16 +1262,6 @@
     }
   }
   setInterval(checkOvertimeReminder, 60000);
-
-  function setOvertimeAppliedUI() {
-    const btn = document.querySelector('.overtime-btn');
-    btn.style.background = 'linear-gradient(145deg, rgba(61,186,122,0.12) 0%, rgba(61,186,122,0.08) 100%)';
-    btn.style.borderColor = 'rgba(61,186,122,0.35)';
-    btn.style.color = 'var(--green)';
-    btn.querySelector('.overtime-btn-icon').textContent = '✅';
-    btn.querySelector('.overtime-btn-label').textContent = '残業申請済み';
-    btn.querySelector('.overtime-btn-sub').textContent = '上長に申請・報告済みです';
-  }
 
   function openOvertimeModal() {
     if (!currentUser) { showToast('ログインしてください'); return; }
@@ -1248,6 +1302,7 @@
       );
       if (data.status === 'ok') {
         overtimeApplied = true;
+        saveOvertimeState(currentUser.id, true);
         setOvertimeAppliedUI();
       }
     } catch(err) {
