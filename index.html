@@ -515,10 +515,22 @@
 
   <!-- 稼働情報 -->
   <div class="work-card">
-    <div class="section-label" style="margin-bottom:0">稼働情報（任意）</div>
+    <div class="section-label" style="margin-bottom:0">稼働情報（必須）</div>
     <div class="work-field">
       <div class="field-label">稼働部門</div>
-      <input class="work-input" id="work-dept" type="text" placeholder="例：福岡営業所、東京本社">
+      <select class="work-input" id="work-dept" style="-webkit-appearance:none;appearance:none;cursor:pointer;">
+        <option value="">選択してください</option>
+        <option value="管理G">管理G</option>
+        <option value="技術G">技術G</option>
+        <option value="建設1G">建設1G</option>
+        <option value="建設2G">建設2G</option>
+        <option value="建設3G">建設3G</option>
+        <option value="建設G">建設G</option>
+        <option value="通信事業部">通信事業部</option>
+        <option value="ネットワーク1G">ネットワーク1G</option>
+        <option value="ネットワーク2G">ネットワーク2G</option>
+        <option value="保全G">保全G</option>
+      </select>
     </div>
     <div class="work-field">
       <div class="field-label">実施内容</div>
@@ -811,6 +823,13 @@
   }
 
   function openPunchModal(action) {
+    const dept = document.getElementById('work-dept').value;
+    const cont = document.getElementById('work-content').value.trim();
+
+    // 稼働部門・実施内容は退勤時のみ必須
+    if (action === 'checkout' && !dept) { showToast('稼働部門を選択してください'); return; }
+    if (action === 'checkout' && !cont) { showToast('実施内容を入力してください'); return; }
+
     pendingAction = action;
     const now = new Date();
     const t   = now.toLocaleTimeString('ja-JP');
@@ -819,8 +838,6 @@
     document.getElementById('pm-type').textContent  = selectedType;
     document.getElementById('pm-time').textContent  = t;
     document.getElementById('pm-date').textContent  = d;
-    const dept = document.getElementById('work-dept').value.trim();
-    const cont = document.getElementById('work-content').value.trim();
     const dr = document.getElementById('pm-dept-row');
     const cr = document.getElementById('pm-cont-row');
     if (dept) { document.getElementById('pm-dept').textContent = dept; dr.style.display = 'flex'; } else { dr.style.display = 'none'; }
@@ -848,8 +865,10 @@
       lng = pos.coords.longitude.toFixed(6);
     } catch(e) { /* 位置情報取得失敗は無視 */ }
 
-    const dept    = document.getElementById('work-dept').value.trim();
-    const content = document.getElementById('work-content').value.trim();
+    const deptVal    = document.getElementById('work-dept').value;
+    const contentVal = document.getElementById('work-content').value.trim();
+    const dept    = deptVal;
+    const cont2   = contentVal;
     const breakEl = document.getElementById('break-time').textContent;
     const moveEl  = document.getElementById('move-time').textContent;
     const breakMins = breakEl.includes('計') ? parseInt(breakEl.replace('計 ','').replace('分','')) : 0;
