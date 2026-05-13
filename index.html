@@ -553,13 +553,17 @@
         </div>
       </div>
       <div>
-        <div class="field-label" style="margin-bottom:6px">申請日</div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <input class="field-input-date" id="apply-date-start" type="date" style="flex:1">
-          <span style="color:var(--muted);font-size:13px;white-space:nowrap">〜</span>
-          <input class="field-input-date" id="apply-date-end" type="date" style="flex:1">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div>
+            <div class="field-label" style="margin-bottom:6px">開始日</div>
+            <input class="field-input-date" id="apply-date-start" type="date" style="width:100%">
+          </div>
+          <div>
+            <div class="field-label" style="margin-bottom:6px">終了日</div>
+            <input class="field-input-date" id="apply-date-end" type="date" style="width:100%">
+          </div>
         </div>
-        <div class="work-note" style="margin-top:6px">※1日の場合は開始日と終了日を同じ日付にしてください</div>
+        <div class="work-note" style="margin-top:2px">※1日の場合は開始日と終了日を同じ日付にしてください</div>
       </div>
       <div class="work-field">
         <div class="field-label">備考（任意）</div>
