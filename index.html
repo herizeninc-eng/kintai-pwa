@@ -628,6 +628,9 @@
   // GAS WebアプリURL（ログイン認証用）
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbwqHY61IztIFfffexd1kx4SL_K6ii5gaLjujCy0jasF_4mmGyU6zdxmzk5yAGxIB8nLyA/exec';
 
+  // フォーム回答GAS URL（打刻状況取得用）
+  const FORM_GAS_URL = 'https://script.google.com/macros/s/AKfycbwCGWXUsb5bkUTVaRBpkE4OGq4QfgRqMSn05bgLvV8ot_MNzKxWNZfpSV7Q13dCDcxTSw/exec';
+
   // Googleフォーム送信URL（打刻用・アカウント不要）
   const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfh5yZ0xR3-GcQ1si6qbtCiik2pSC7dWJEIsRAYK6a-CytwJw/formResponse';
   const FORM_ENTRIES = {
@@ -740,6 +743,7 @@
         document.getElementById('am-name').textContent   = currentUser.name;
         setTodayMin();
         loadPunchState();
+        fetchTodayPunchStatus();  // サーバーから当日打刻状況を取得
       } else {
         err.classList.remove('show');
         void err.offsetWidth;
@@ -989,6 +993,36 @@
       addHistory('時間外移動 終了', mins + '分', t, '#7b8ef7');
       showToast('時間外移動を終了しました（' + mins + '分）');
       moveStart = null;
+    }
+  }
+
+  // ======== サーバーから当日打刻状況を取得 ========
+  async function fetchTodayPunchStatus() {
+    if (!currentUser) return;
+    try {
+      const res  = await fetch(FORM_GAS_URL + '?empId=' + encodeURIComponent(currentUser.id));
+      const data = await res.json();
+      if (data.status !== 'ok') return;
+
+      // 出勤データがあれば反映
+      if (data.checkin) {
+        document.getElementById('status-checkin').textContent = data.checkin.slice(0,5);
+        document.getElementById('status-checkin').className   = 'status-value recorded';
+        document.getElementById('btn-checkin').disabled       = true;
+      }
+
+      // 退勤データがあれば反映
+      if (data.checkout) {
+        document.getElementById('status-checkout').textContent = data.checkout.slice(0,5);
+        document.getElementById('status-checkout').className   = 'status-value recorded';
+        document.getElementById('btn-checkout').disabled       = true;
+      }
+
+      // ローカルストレージにも保存
+      savePunchState();
+
+    } catch(e) {
+      console.log('打刻状況取得エラー:', e);
     }
   }
 
