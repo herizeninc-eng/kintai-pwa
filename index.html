@@ -931,16 +931,42 @@
     document.getElementById('apply-modal').classList.add('show');
   }
 
-  function doApply() {
+  async function doApply() {
     const sVal = document.getElementById('apply-date-start').value;
     const eVal = document.getElementById('apply-date-end').value;
-    const dateStr = sVal === eVal ? sVal.replace(/-/g,'/') : sVal.replace(/-/g,'/') + ' 〜 ' + eVal.replace(/-/g,'/');
+    const note = document.getElementById('apply-note').value.trim();
+    const startDate = sVal.replace(/-/g,'/');
+    const endDate   = eVal.replace(/-/g,'/');
+    const dateStr   = startDate === endDate ? startDate : startDate + ' 〜 ' + endDate;
+
     closeModal('apply-modal');
-    showToast(`${selectedApplyType}の申請を送信しました（${dateStr}）`);
+    showToast(`${selectedApplyType}の申請を送信中...`);
+
+    try {
+      const res = await fetch(FORM_GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          requestType: 'apply',
+          empId:       currentUser.id,
+          empName:     currentUser.name,
+          applyType:   selectedApplyType,
+          startDate,
+          endDate,
+          note,
+        })
+      });
+      const data = await res.json();
+      showToast(data.status === 'ok'
+        ? `${selectedApplyType}の申請を送信しました（${dateStr}）`
+        : `⚠️ 送信エラー：${data.message}`
+      );
+    } catch(err) {
+      showToast('⚠️ 通信エラー。後で再送してください。');
+    }
+
     document.querySelectorAll('.apply-btn').forEach(b => b.classList.remove('selected'));
     document.getElementById('apply-note').value = '';
     selectedApplyType = null;
-    // GASへの申請送信 → sendApplyToGAS({ type: selectedApplyType, date: dateStr, ... });
   }
 
   function addHistory(label, type, time, color) {
