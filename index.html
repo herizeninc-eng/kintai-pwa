@@ -384,7 +384,9 @@
 <!-- ===== ログイン ===== -->
 <div class="screen" id="login-screen">
   <div>
-    <div class="app-icon">⏱</div>
+    <div class="app-icon" style="background:white;padding:4px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+      <img src="logo.png" alt="エムエイトアイ株式会社" style="width:56px;height:56px;object-fit:contain;">
+    </div>
     <div class="login-title">勤務打刻</div>
     <div class="login-subtitle">社員番号を入力してログイン</div>
   </div>
@@ -520,6 +522,8 @@
       <div class="field-label">稼働部門</div>
       <select class="work-input" id="work-dept" style="-webkit-appearance:none;appearance:none;cursor:pointer;">
         <option value="">選択してください</option>
+        <option value="ネットワーク1G">ネットワーク1G</option>
+        <option value="ネットワーク2G">ネットワーク2G</option>
         <option value="管理G">管理G</option>
         <option value="技術G">技術G</option>
         <option value="建設1G">建設1G</option>
@@ -527,8 +531,6 @@
         <option value="建設3G">建設3G</option>
         <option value="建設G">建設G</option>
         <option value="通信事業部">通信事業部</option>
-        <option value="ネットワーク1G">ネットワーク1G</option>
-        <option value="ネットワーク2G">ネットワーク2G</option>
         <option value="保全G">保全G</option>
       </select>
     </div>
