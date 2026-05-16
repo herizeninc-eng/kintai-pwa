@@ -992,8 +992,8 @@
       formData.append(FORM_ENTRIES.date,      d);
       formData.append(FORM_ENTRIES.dept,      dept);
       formData.append(FORM_ENTRIES.content,   cont2);
-      formData.append(FORM_ENTRIES.breakMins, breakMins);
-      formData.append(FORM_ENTRIES.moveMins,  moveMins);
+      formData.append(FORM_ENTRIES.breakMins, Math.floor(breakMins / 15) * 0.25);
+      formData.append(FORM_ENTRIES.moveMins,  Math.floor(moveMins  / 15) * 0.25);
       formData.append(FORM_ENTRIES.lat,       lat);
       formData.append(FORM_ENTRIES.lng,       lng);
 
