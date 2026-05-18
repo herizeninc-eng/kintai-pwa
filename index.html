@@ -667,6 +667,18 @@
     </div>
   </div>
 
+  <!-- 勤務表確認 -->
+  <div class="apply-card">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+      <div class="apply-badge" style="background:var(--accent)">確認</div>
+      <div class="apply-title">勤務表確認</div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px;">
+      当月の勤務表PDFをご自身のメールアドレスに送信します。
+    </div>
+    <button class="apply-submit" style="background:var(--accent)" onclick="openTimesheetPdfModal()">📄 PDFをメールに送信する</button>
+  </div>
+
   <!-- デバッグモードボタン -->
   <div style="text-align:center">
     <button onclick="openDebugMode()" style="background:none;border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-family:'Noto Sans JP',sans-serif;font-size:11px;padding:8px 16px;cursor:pointer;opacity:0.5;">🛠 デバッグモード</button>
@@ -838,6 +850,24 @@
     <div class="modal-btns">
       <button class="modal-cancel" onclick="closeModal('correct-modal')">キャンセル</button>
       <button class="modal-confirm" style="background:var(--amber)" onclick="doCorrect()">申請する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 勤務表PDF送信確認モーダル -->
+<div class="modal-backdrop" id="timesheet-pdf-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">勤務表確認</div>
+    <div class="modal-sub">当月の勤務表PDFをメールで送信します</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:24px;text-align:center;">
+      登録されているメールアドレス宛に<br>
+      当月の勤務表PDFを送信します。<br>
+      よろしいですか？
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal('timesheet-pdf-modal')">キャンセル</button>
+      <button class="modal-confirm" style="background:var(--accent)" onclick="doTimesheetPdf()">送信する</button>
     </div>
   </div>
 </div>
@@ -1297,6 +1327,35 @@
     selectedCorrectType = '出勤';
   }
 
+  // ======== 勤務表PDF送信 ========
+  function openTimesheetPdfModal() {
+    if (!currentUser) { showToast('ログインが必要です'); return; }
+    openModal('timesheet-pdf-modal');
+  }
+
+  async function doTimesheetPdf() {
+    closeModal('timesheet-pdf-modal');
+    showToast('⏳ 勤務表を生成中…少々お待ちください');
+    try {
+      const res = await fetch(FORM_GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          requestType: 'timesheetPdf',
+          empId:       currentUser.id,
+          empName:     currentUser.name,
+        })
+      });
+      const data = await res.json();
+      if (data.status === 'ok') {
+        showToast('📧 勤務表PDFをメールに送信しました');
+      } else {
+        showToast('⚠️ エラー：' + (data.message || '不明なエラー'));
+      }
+    } catch(err) {
+      showToast('⚠️ 通信エラーが発生しました');
+    }
+  }
+
   function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
   function showToast(msg) {
@@ -1668,6 +1727,7 @@
   document.getElementById('punch-modal').addEventListener('click', function(e) { if (e.target===this) closeModal('punch-modal'); });
   document.getElementById('apply-modal').addEventListener('click',   function(e) { if (e.target===this) closeModal('apply-modal'); });
   document.getElementById('correct-modal').addEventListener('click', function(e) { if (e.target===this) closeModal('correct-modal'); });
+  document.getElementById('timesheet-pdf-modal').addEventListener('click', function(e) { if (e.target===this) closeModal('timesheet-pdf-modal'); });
 </script>
 </body>
 </html>
