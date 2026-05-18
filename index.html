@@ -377,6 +377,13 @@
     color: var(--muted); min-height: 18px; transition: color 0.2s;
   }
 
+  /* カード内トグルスイッチ（クリックはカード側で処理） */
+  .toggle-card .toggle-switch { pointer-events: none; }
+  /* ON時カラー上書き - 規定外休憩（アンバー） */
+  .toggle-card.on-break .toggle-switch .toggle-slider { background: var(--amber); }
+  /* ON時カラー上書き - 時間外移動（アクセント） */
+  .toggle-card.on-move .toggle-switch .toggle-slider { background: var(--accent); }
+
   /* ON状態 - 規定外休憩（アンバー） */
   .toggle-card.on-break {
     background: rgba(229,168,75,0.08);
@@ -553,7 +560,10 @@
           <!-- 受け皿 -->
           <rect x="2" y="24" width="20" height="2.5" rx="1.2" fill="currentColor" opacity="0.7"/>
         </svg>
-        <span class="toggle-pill" id="break-pill">OFF</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="break-pill">
+          <span class="toggle-slider"></span>
+        </label>
       </div>
       <div class="toggle-card-name">規定外休憩</div>
       <div class="toggle-card-desc">私用外出・休憩の開始／終了</div>
@@ -580,7 +590,10 @@
           <rect x="4" y="6" width="5" height="3.5" rx="0.8" fill="var(--surface2)" opacity="0.6"/>
           <rect x="11" y="6" width="5" height="3.5" rx="0.8" fill="var(--surface2)" opacity="0.6"/>
         </svg>
-        <span class="toggle-pill" id="move-pill">OFF</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="move-pill">
+          <span class="toggle-slider"></span>
+        </label>
       </div>
       <div class="toggle-card-name">時間外移動</div>
       <div class="toggle-card-desc">18時以降の移動（残業対象外）</div>
@@ -1437,7 +1450,7 @@
       breakOn = true;
       breakStart = now;
       card.classList.add('on-break');
-      pill.textContent = '計測中';
+      pill.checked = true;
       timeEl.textContent = '開始 ' + t.slice(0,5);
       addHistory('規定外休憩 開始', '', t, '#e5a84b');
       showToast('規定外休憩を開始しました（' + t.slice(0,5) + '）');
@@ -1447,7 +1460,7 @@
       const mins = Math.round((now - breakStart) / 60000);
       breakSessions.push({ start: breakStart, end: now, mins });
       card.classList.remove('on-break');
-      pill.textContent = 'OFF';
+      pill.checked = false;
       timeEl.textContent = '計 ' + mins + '分';
       addHistory('規定外休憩 終了', mins + '分', t, '#e5a84b');
       showToast('規定外休憩を終了しました（' + mins + '分）');
@@ -1471,7 +1484,7 @@
       moveOn = true;
       moveStart = now;
       card.classList.add('on-move');
-      pill.textContent = '計測中';
+      pill.checked = true;
       timeEl.textContent = '開始 ' + t.slice(0,5);
       addHistory('時間外移動 開始', '', t, '#7b8ef7');
       showToast('時間外移動を開始しました（' + t.slice(0,5) + '）');
@@ -1480,7 +1493,7 @@
       const mins = Math.round((now - moveStart) / 60000);
       moveSessions.push({ start: moveStart, end: now, mins });
       card.classList.remove('on-move');
-      pill.textContent = 'OFF';
+      pill.checked = false;
       timeEl.textContent = '計 ' + mins + '分';
       addHistory('時間外移動 終了', mins + '分', t, '#7b8ef7');
       showToast('時間外移動を終了しました（' + mins + '分）');
