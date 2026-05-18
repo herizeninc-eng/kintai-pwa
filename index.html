@@ -563,6 +563,10 @@
         <option value="建設3G">建設3G</option>
         <option value="通信事業部">通信事業部</option>
         <option value="保全G">保全G</option>
+        <option value="横浜営業所">横浜営業所</option>
+        <option value="埼玉営業所">埼玉営業所</option>
+        <option value="大阪営業所">大阪営業所</option>
+        <option value="広島営業所">広島営業所</option>
       </select>
     </div>
     <div class="work-field">
@@ -596,6 +600,14 @@
           <button class="apply-btn" data-apply="特別" onclick="selectApply(this)">特別</button>
           <button class="apply-btn" data-apply="慶弔" onclick="selectApply(this)">慶弔</button>
         </div>
+      </div>
+      <div>
+        <div class="field-label" style="margin-bottom:8px">休暇時間</div>
+        <select class="work-input" id="apply-leave-time" style="-webkit-appearance:none;appearance:none;cursor:pointer;">
+          <option value="全休">全休</option>
+          <option value="午前休">午前休</option>
+          <option value="午後休">午後休</option>
+        </select>
       </div>
       <div>
         <div style="display:flex;flex-direction:column;gap:8px">
@@ -756,6 +768,7 @@
     <div class="modal-info">
       <div class="modal-row"><span class="modal-row-label">氏名</span><span class="modal-row-value jp" id="am-name"></span></div>
       <div class="modal-row"><span class="modal-row-label">申請種別</span><span class="modal-row-value jp" id="am-type"></span></div>
+      <div class="modal-row"><span class="modal-row-label">休暇時間</span><span class="modal-row-value jp" id="am-leavetime"></span></div>
       <div class="modal-row"><span class="modal-row-label">申請日</span><span class="modal-row-value" id="am-date"></span></div>
       <div class="modal-row" id="am-note-row" style="display:none"><span class="modal-row-label">備考</span><span class="modal-row-value jp" id="am-note"></span></div>
     </div>
@@ -1078,8 +1091,10 @@
     const today = `${nowA.getFullYear()}-${String(nowA.getMonth()+1).padStart(2,'0')}-${String(nowA.getDate()).padStart(2,'0')}`;
     if (startVal < today) { showToast('本日以降の日付を選択してください'); return; }
     if (endVal < startVal) { showToast('終了日は開始日以降を選択してください'); return; }
-    const note = document.getElementById('apply-note').value.trim();
-    document.getElementById('am-type').textContent = selectedApplyType;
+    const note      = document.getElementById('apply-note').value.trim();
+    const leaveTime = document.getElementById('apply-leave-time').value;
+    document.getElementById('am-type').textContent     = selectedApplyType;
+    document.getElementById('am-leavetime').textContent = leaveTime;
     const dateStr = startVal === endVal
       ? startVal.replace(/-/g,'/')
       : startVal.replace(/-/g,'/') + ' 〜 ' + endVal.replace(/-/g,'/');
@@ -1090,15 +1105,20 @@
   }
 
   async function doApply() {
-    const sVal = document.getElementById('apply-date-start').value;
-    const eVal = document.getElementById('apply-date-end').value;
-    const note = document.getElementById('apply-note').value.trim();
+    const sVal      = document.getElementById('apply-date-start').value;
+    const eVal      = document.getElementById('apply-date-end').value;
+    const note      = document.getElementById('apply-note').value.trim();
+    const leaveTime = document.getElementById('apply-leave-time').value;
     const startDate = sVal.replace(/-/g,'/');
     const endDate   = eVal.replace(/-/g,'/');
     const dateStr   = startDate === endDate ? startDate : startDate + ' 〜 ' + endDate;
 
+    // 全休はそのまま、午前休→(午前)、午後休→(午後) を付与
+    const suffix    = leaveTime === '全休' ? '' : '(' + leaveTime.replace('休', '') + ')';
+    const finalType = selectedApplyType + suffix;
+
     closeModal('apply-modal');
-    showToast(`${selectedApplyType}の申請を送信中...`);
+    showToast(`${finalType}の申請を送信中...`);
 
     try {
       const res = await fetch(FORM_GAS_URL, {
@@ -1107,7 +1127,7 @@
           requestType: 'apply',
           empId:       currentUser.id,
           empName:     currentUser.name,
-          applyType:   selectedApplyType,
+          applyType:   finalType,
           startDate,
           endDate,
           note,
@@ -1115,7 +1135,7 @@
       });
       const data = await res.json();
       showToast(data.status === 'ok'
-        ? `${selectedApplyType}の申請を送信しました（${dateStr}）`
+        ? `${finalType}の申請を送信しました（${dateStr}）`
         : `⚠️ 送信エラー：${data.message}`
       );
     } catch(err) {
@@ -1124,6 +1144,7 @@
 
     document.querySelectorAll('.apply-btn').forEach(b => b.classList.remove('selected'));
     document.getElementById('apply-note').value = '';
+    document.getElementById('apply-leave-time').value = '全休';
     selectedApplyType = null;
   }
 
