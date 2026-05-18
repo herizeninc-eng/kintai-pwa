@@ -1562,7 +1562,7 @@
     }
   }
 
-  // ======== 勤怠リマインダー（出勤から8.5h経過・退勤未打刻・残業申請なし → メール送信） ========
+  // ======== 勤怠リマインダー（出勤から8h10m経過・退勤未打刻・残業申請なし → メール送信） ========
   function getReminderSentToday(empId) {
     const saved = localStorage.getItem('reminderSent_' + empId);
     if (!saved) return false;
@@ -1592,8 +1592,8 @@
     const today = new Date();
     const checkinTime = new Date(today);
     checkinTime.setHours(h, m, 0, 0);
-    const reminderTime = new Date(checkinTime.getTime() + 8.5 * 60 * 60 * 1000);
-    if (new Date() < reminderTime) return; // まだ8.5時間経過していない
+    const reminderTime = new Date(checkinTime.getTime() + (8 * 60 + 10) * 60 * 1000);
+    if (new Date() < reminderTime) return; // まだ8時間10分経過していない
 
     // 本日すでに送信済みなら無視
     if (getReminderSentToday(currentUser.id)) return;
