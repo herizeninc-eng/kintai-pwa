@@ -452,13 +452,18 @@
         <div class="status-value" id="status-checkout">──</div>
       </div>
     </div>
+    <div id="flex-hint" style="display:none;background:var(--surface2);border-radius:10px;padding:10px 16px;text-align:center;margin-top:8px;">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:2px;">⏱ フレックス 予定退勤（8h＋休憩1h）</div>
+      <div id="flex-checkout-hint" style="font-size:26px;font-weight:700;color:var(--accent);letter-spacing:2px;">──</div>
+    </div>
   </div>
 
   <!-- 勤務種別 -->
   <div>
     <div class="section-label">種別</div>
     <div class="type-grid">
-      <button class="type-btn selected" style="grid-column:1/-1" data-type="通常" onclick="selectType(this)">通常</button>
+      <button class="type-btn selected" style="grid-column:1/-1" data-type="通常"     onclick="selectType(this)">通常</button>
+      <button class="type-btn"          style="grid-column:1/-1" data-type="フレックス" onclick="selectType(this)">フレックス</button>
       <button class="type-btn"               data-type="早出"     onclick="selectType(this)">早出</button>
       <button class="type-btn"               data-type="遅出"     onclick="selectType(this)">遅出</button>
       <button class="type-btn"               data-type="有給(午前)" onclick="selectType(this)">有給(午前)</button>
@@ -836,14 +841,15 @@
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const state = {
-      date:       today,
-      checkin:    document.getElementById('status-checkin').textContent,
-      checkout:   document.getElementById('status-checkout').textContent,
+      date:        today,
+      checkin:     document.getElementById('status-checkin').textContent,
+      checkout:    document.getElementById('status-checkout').textContent,
       checkinDone:  document.getElementById('btn-checkin').disabled,
       checkoutDone: document.getElementById('btn-checkout').disabled,
-      history:    document.getElementById('history-list').innerHTML,
-      breakTime:  document.getElementById('break-time').textContent,
-      moveTime:   document.getElementById('move-time').textContent,
+      history:     document.getElementById('history-list').innerHTML,
+      breakTime:   document.getElementById('break-time').textContent,
+      moveTime:    document.getElementById('move-time').textContent,
+      punchType:   selectedType,
     };
     localStorage.setItem('punchState_' + currentUser.id, JSON.stringify(state));
   }
@@ -876,6 +882,14 @@
     if (state.history) document.getElementById('history-list').innerHTML = state.history;
     if (state.breakTime && state.breakTime !== '──') document.getElementById('break-time').textContent = state.breakTime;
     if (state.moveTime  && state.moveTime  !== '──') document.getElementById('move-time').textContent  = state.moveTime;
+    // 種別を復元
+    if (state.punchType) {
+      selectedType = state.punchType;
+      document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+      const btn = document.querySelector(`[data-type="${state.punchType}"]`);
+      if (btn) btn.classList.add('selected');
+      updateFlexHint();
+    }
   }
 
   // GAS認証（社員番号でマスタ照合）
@@ -937,6 +951,7 @@
     document.querySelectorAll('.apply-btn').forEach(b => b.classList.remove('selected'));
     document.getElementById('btn-checkin').disabled  = false;
     document.getElementById('btn-checkout').disabled = false;
+    document.getElementById('flex-hint').style.display = 'none';
     if (document.getElementById('apply-body').classList.contains('open')) toggleApply();
   }
 
@@ -944,6 +959,24 @@
     document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
     el.classList.add('selected');
     selectedType = el.dataset.type;
+    updateFlexHint();
+  }
+
+  function updateFlexHint() {
+    const hint = document.getElementById('flex-hint');
+    if (selectedType !== 'フレックス') { hint.style.display = 'none'; return; }
+    const checkinEl  = document.getElementById('status-checkin');
+    const checkinTxt = checkinEl.textContent;
+    hint.style.display = 'block';
+    if (checkinTxt === '──' || !checkinEl.classList.contains('recorded')) {
+      document.getElementById('flex-checkout-hint').textContent = '出勤後に表示';
+      return;
+    }
+    const parts   = checkinTxt.split(':');
+    const total   = parseInt(parts[0]) * 60 + parseInt(parts[1]) + 9 * 60; // +9時間
+    const pad     = n => String(n).padStart(2, '0');
+    document.getElementById('flex-checkout-hint').textContent =
+      pad(Math.floor(total / 60) % 24) + ':' + pad(total % 60);
   }
 
   function selectApply(el) {
@@ -996,11 +1029,11 @@
     // ── 打刻時刻補正 ──────────────────────────
     const punchTime = new Date(now);
     if (label === '出勤') {
-      if (selectedType === '早出') {
-        // 早出：15分単位切り捨て
+      if (selectedType === '早出' || selectedType === 'フレックス') {
+        // 早出・フレックス：15分単位切り捨て（9:00補正なし）
         punchTime.setMinutes(Math.floor(punchTime.getMinutes() / 15) * 15, 0, 0);
       } else {
-        // 早出以外：9:00より前なら9:00に補正
+        // その他：9:00より前なら9:00に補正
         const nine = new Date(now);
         nine.setHours(9, 0, 0, 0);
         if (punchTime < nine) {
@@ -1046,6 +1079,8 @@
     document.getElementById(sid).className   = 'status-value recorded';
     document.getElementById(bid).disabled    = true;
     addHistory(label, selectedType, t, color);
+    // フレックス出勤後：予定退勤時刻を表示
+    if (pendingAction === 'checkin') updateFlexHint();
     closeModal('punch-modal');
     showToast(`${label}打刻中...`);
 
