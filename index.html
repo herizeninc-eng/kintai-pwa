@@ -635,6 +635,42 @@
     </div>
   </div>
 
+  <!-- 打刻修正申請 -->
+  <div class="apply-card">
+    <div class="apply-header" id="correct-header" onclick="toggleCorrect()">
+      <div class="apply-header-left">
+        <div class="apply-badge" style="background:var(--amber)">修正</div>
+        <div class="apply-title">打刻修正申請</div>
+      </div>
+      <span class="apply-chevron" id="correct-chevron">▾</span>
+    </div>
+    <div class="apply-body" id="correct-body">
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;">
+        過去の打刻ミスを修正します。<br>申請後、上長が承認すると勤務表に反映されます。
+      </div>
+      <div>
+        <div class="field-label" style="margin-bottom:6px">対象日付</div>
+        <input class="field-input-date" id="correct-date" type="date" style="width:100%">
+      </div>
+      <div>
+        <div class="field-label" style="margin-bottom:8px">修正対象</div>
+        <div style="display:flex;gap:8px">
+          <button class="apply-btn selected" data-correct="出勤" onclick="selectCorrectType(this)" style="flex:1">出勤</button>
+          <button class="apply-btn"          data-correct="退勤" onclick="selectCorrectType(this)" style="flex:1">退勤</button>
+        </div>
+      </div>
+      <div>
+        <div class="field-label" style="margin-bottom:6px">修正時間</div>
+        <input class="field-input" id="correct-time" type="time" style="font-size:16px;width:100%">
+      </div>
+      <div class="work-field">
+        <div class="field-label">修正理由（必須）</div>
+        <textarea class="work-input" id="correct-reason" placeholder="修正理由を記入してください" style="min-height:60px"></textarea>
+      </div>
+      <button class="apply-submit" style="background:var(--amber)" onclick="openCorrectModal()">申請する</button>
+    </div>
+  </div>
+
   <!-- デバッグモードボタン -->
   <div style="text-align:center">
     <button onclick="openDebugMode()" style="background:none;border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-family:'Noto Sans JP',sans-serif;font-size:11px;padding:8px 16px;cursor:pointer;opacity:0.5;">🛠 デバッグモード</button>
@@ -787,6 +823,29 @@
   </div>
 </div>
 
+<!-- 打刻修正確認モーダル -->
+<div class="modal-backdrop" id="correct-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">打刻修正申請の確認</div>
+    <div class="modal-sub">以下の内容で申請します</div>
+    <div class="modal-info">
+      <div class="modal-row"><span class="modal-row-label">氏名</span><span class="modal-row-value jp" id="cm-name"></span></div>
+      <div class="modal-row"><span class="modal-row-label">対象日</span><span class="modal-row-value" id="cm-date"></span></div>
+      <div class="modal-row"><span class="modal-row-label">修正対象</span><span class="modal-row-value jp" id="cm-type"></span></div>
+      <div class="modal-row"><span class="modal-row-label">修正時間</span><span class="modal-row-value" id="cm-time"></span></div>
+      <div class="modal-row"><span class="modal-row-label">修正理由</span><span class="modal-row-value jp" id="cm-reason"></span></div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6;">
+      申請後、上長の承認が必要です。<br>承認されると勤務表に自動反映されます。
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal('correct-modal')">キャンセル</button>
+      <button class="modal-confirm" style="background:var(--amber)" onclick="doCorrect()">申請する</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -815,6 +874,7 @@
   let currentUser = null;
   let selectedType = '通常';
   let selectedApplyType = null;
+  let selectedCorrectType = '出勤';
   let pendingAction = null;
 
   function updateClock() {
@@ -834,6 +894,10 @@
     const endEl   = document.getElementById('apply-date-end');
     startEl.min = today; startEl.value = today;
     endEl.min   = today; endEl.value   = today;
+    // 打刻修正：本日を上限（未来日は不可）
+    const correctDateEl = document.getElementById('correct-date');
+    correctDateEl.max   = today;
+    correctDateEl.value = today;
   }
 
   // ======== 打刻状態の保存・復元（0時にリセット） ========
@@ -1197,6 +1261,73 @@
     list.appendChild(item);
   }
 
+  // ======== 打刻修正申請 ========
+  function toggleCorrect() {
+    const body    = document.getElementById('correct-body');
+    const chevron = document.getElementById('correct-chevron');
+    const header  = document.getElementById('correct-header');
+    const open    = body.classList.contains('open');
+    body.classList.toggle('open', !open);
+    chevron.classList.toggle('open', !open);
+    header.classList.toggle('open', !open);
+  }
+
+  function selectCorrectType(el) {
+    document.querySelectorAll('[data-correct]').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedCorrectType = el.dataset.correct;
+  }
+
+  function openCorrectModal() {
+    const dateVal  = document.getElementById('correct-date').value;
+    const timeVal  = document.getElementById('correct-time').value;
+    const reason   = document.getElementById('correct-reason').value.trim();
+    if (!dateVal)  { showToast('対象日付を選択してください'); return; }
+    if (!timeVal)  { showToast('修正時間を入力してください'); return; }
+    if (!reason)   { showToast('修正理由を入力してください'); return; }
+    document.getElementById('cm-name').textContent   = currentUser.name;
+    document.getElementById('cm-date').textContent   = dateVal.replace(/-/g,'/');
+    document.getElementById('cm-type').textContent   = selectedCorrectType;
+    document.getElementById('cm-time').textContent   = timeVal;
+    document.getElementById('cm-reason').textContent = reason;
+    document.getElementById('correct-modal').classList.add('show');
+  }
+
+  async function doCorrect() {
+    const dateVal  = document.getElementById('correct-date').value;
+    const timeVal  = document.getElementById('correct-time').value;
+    const reason   = document.getElementById('correct-reason').value.trim();
+    closeModal('correct-modal');
+    showToast('打刻修正を申請中...');
+    try {
+      const res = await fetch(FORM_GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          requestType:   'correction',
+          empId:         currentUser.id,
+          empName:       currentUser.name,
+          targetDate:    dateVal.replace(/-/g,'/'),
+          punchType:     selectedCorrectType,
+          correctedTime: timeVal,
+          reason,
+        })
+      });
+      const data = await res.json();
+      showToast(data.status === 'ok'
+        ? '打刻修正を申請しました'
+        : `⚠️ 送信エラー：${data.message}`
+      );
+    } catch(err) {
+      showToast('⚠️ 通信エラー。後で再送してください。');
+    }
+    document.getElementById('correct-date').value   = '';
+    document.getElementById('correct-time').value   = '';
+    document.getElementById('correct-reason').value = '';
+    document.querySelectorAll('[data-correct]').forEach(b => b.classList.remove('selected'));
+    document.querySelector('[data-correct="出勤"]').classList.add('selected');
+    selectedCorrectType = '出勤';
+  }
+
   function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
   function showToast(msg) {
@@ -1531,7 +1662,8 @@
 
   document.getElementById('emp-id').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
   document.getElementById('punch-modal').addEventListener('click', function(e) { if (e.target===this) closeModal('punch-modal'); });
-  document.getElementById('apply-modal').addEventListener('click', function(e) { if (e.target===this) closeModal('apply-modal'); });
+  document.getElementById('apply-modal').addEventListener('click',   function(e) { if (e.target===this) closeModal('apply-modal'); });
+  document.getElementById('correct-modal').addEventListener('click', function(e) { if (e.target===this) closeModal('correct-modal'); });
 </script>
 </body>
 </html>
