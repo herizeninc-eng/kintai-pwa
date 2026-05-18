@@ -673,9 +673,6 @@
       <div class="apply-badge" style="background:var(--accent)">確認</div>
       <div class="apply-title">勤務表確認</div>
     </div>
-    <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px;">
-      当月の勤務表PDFをご自身のメールアドレスに送信します。
-    </div>
     <button class="apply-submit" style="background:var(--accent)" onclick="openTimesheetPdfModal()">📄 PDFをメールに送信する</button>
   </div>
 
@@ -738,13 +735,8 @@
     </div>
   </div>
 
-  <!-- 履歴 -->
-  <div>
-    <div class="section-label">本日の履歴</div>
-    <div class="history-list" id="history-list">
-      <div style="color:var(--muted);font-size:13px;padding:8px 0">まだ打刻がありません</div>
-    </div>
-  </div>
+  <!-- 履歴（非表示） -->
+  <div id="history-list" style="display:none"></div>
 
 </div>
 
@@ -1330,7 +1322,7 @@
   // ======== 勤務表PDF送信 ========
   function openTimesheetPdfModal() {
     if (!currentUser) { showToast('ログインが必要です'); return; }
-    openModal('timesheet-pdf-modal');
+    document.getElementById('timesheet-pdf-modal').classList.add('show');
   }
 
   async function doTimesheetPdf() {
