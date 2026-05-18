@@ -452,10 +452,6 @@
         <div class="status-value" id="status-checkout">──</div>
       </div>
     </div>
-    <div id="flex-hint" style="display:none;background:var(--surface2);border-radius:10px;padding:10px 16px;text-align:center;margin-top:8px;">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:2px;">⏱ フレックス 予定退勤（8h＋休憩1h）</div>
-      <div id="flex-checkout-hint" style="font-size:26px;font-weight:700;color:var(--accent);letter-spacing:2px;">──</div>
-    </div>
   </div>
 
   <!-- 勤務種別 -->
@@ -952,7 +948,6 @@
       document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
       const btn = document.querySelector(`[data-type="${state.punchType}"]`);
       if (btn) btn.classList.add('selected');
-      updateFlexHint();
     }
   }
 
@@ -1015,7 +1010,6 @@
     document.querySelectorAll('.apply-btn').forEach(b => b.classList.remove('selected'));
     document.getElementById('btn-checkin').disabled  = false;
     document.getElementById('btn-checkout').disabled = false;
-    document.getElementById('flex-hint').style.display = 'none';
     if (document.getElementById('apply-body').classList.contains('open')) toggleApply();
   }
 
@@ -1023,24 +1017,6 @@
     document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
     el.classList.add('selected');
     selectedType = el.dataset.type;
-    updateFlexHint();
-  }
-
-  function updateFlexHint() {
-    const hint = document.getElementById('flex-hint');
-    if (selectedType !== 'フレックス') { hint.style.display = 'none'; return; }
-    const checkinEl  = document.getElementById('status-checkin');
-    const checkinTxt = checkinEl.textContent;
-    hint.style.display = 'block';
-    if (checkinTxt === '──' || !checkinEl.classList.contains('recorded')) {
-      document.getElementById('flex-checkout-hint').textContent = '出勤後に表示';
-      return;
-    }
-    const parts   = checkinTxt.split(':');
-    const total   = parseInt(parts[0]) * 60 + parseInt(parts[1]) + 9 * 60; // +9時間
-    const pad     = n => String(n).padStart(2, '0');
-    document.getElementById('flex-checkout-hint').textContent =
-      pad(Math.floor(total / 60) % 24) + ':' + pad(total % 60);
   }
 
   function selectApply(el) {
@@ -1143,8 +1119,6 @@
     document.getElementById(sid).className   = 'status-value recorded';
     document.getElementById(bid).disabled    = true;
     addHistory(label, selectedType, t, color);
-    // フレックス出勤後：予定退勤時刻を表示
-    if (pendingAction === 'checkin') updateFlexHint();
     closeModal('punch-modal');
     showToast(`${label}打刻中...`);
 
@@ -1162,12 +1136,7 @@
       formData.append(FORM_ENTRIES.moveMins,  Math.floor(moveMins  / 15) * 0.25);
       formData.append(FORM_ENTRIES.lat,       lat);
       formData.append(FORM_ENTRIES.lng,       lng);
-
-      await fetch(FORM_URL, {
-        method: 'POST',
-        mode:   'no-cors',
-        body:   formData,
-      });
+      await fetch(FORM_URL, { method: 'POST', mode: 'no-cors', body: formData });
       showToast(`${label}打刻しました（${t.slice(0,5)}）`);
       savePunchState();
       // 退勤打刻時は残業申請状態をリセット
