@@ -669,11 +669,15 @@
 
   <!-- 勤務表確認 -->
   <div class="apply-card">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-      <div class="apply-badge" style="background:var(--accent)">確認</div>
-      <div class="apply-title">勤務表確認</div>
+    <div class="apply-header">
+      <div class="apply-header-left">
+        <div class="apply-badge" style="background:var(--accent)">確認</div>
+        <div class="apply-title">勤務表確認</div>
+      </div>
     </div>
-    <button class="apply-submit" style="background:var(--accent)" onclick="openTimesheetPdfModal()">📄 PDFをメールに送信する</button>
+    <div class="apply-body open">
+      <button class="apply-submit" style="background:var(--accent)" onclick="openTimesheetPdfModal()">📄 PDFをメールに送信する</button>
+    </div>
   </div>
 
   <!-- デバッグモードボタン -->
@@ -1339,7 +1343,7 @@
       });
       const data = await res.json();
       if (data.status === 'ok') {
-        showToast('📧 勤務表PDFをメールに送信しました');
+        showToast('📧 まもなく勤務表PDFがメールに届きます');
       } else {
         showToast('⚠️ エラー：' + (data.message || '不明なエラー'));
       }
