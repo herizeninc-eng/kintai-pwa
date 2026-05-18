@@ -118,6 +118,20 @@
     font-family: 'Noto Sans JP', sans-serif; font-size: 12px;
     padding: 7px 12px; cursor: pointer;
   }
+  .remote-wrap { display:flex; align-items:center; gap:6px; }
+  .remote-label { font-size:11px; color:var(--muted); white-space:nowrap; }
+  .toggle-switch { position:relative; display:inline-block; width:38px; height:22px; flex-shrink:0; }
+  .toggle-switch input { opacity:0; width:0; height:0; }
+  .toggle-slider {
+    position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0;
+    background:var(--border); border-radius:22px; transition:.2s;
+  }
+  .toggle-slider:before {
+    position:absolute; content:""; height:16px; width:16px;
+    left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.2s;
+  }
+  input:checked + .toggle-slider { background:var(--accent); }
+  input:checked + .toggle-slider:before { transform:translateX(16px); }
   .clock-card {
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 24px; text-align: center;
@@ -432,7 +446,16 @@
       <div class="user-name" id="disp-name"></div>
       <div class="user-code" id="disp-code"></div>
     </div>
-    <button class="logout-btn" onclick="doLogout()">ログアウト</button>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="remote-wrap">
+        <span class="remote-label" id="remote-label">在宅</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="remote-toggle" onchange="onRemoteToggle(this)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">ログアウト</button>
+    </div>
   </div>
 
   <div class="clock-card">
@@ -897,6 +920,13 @@
   let selectedType = '通常';
   let selectedApplyType = null;
   let selectedCorrectType = '出勤';
+  let isRemoteWork = false;
+
+  function onRemoteToggle(el) {
+    isRemoteWork = el.checked;
+    document.getElementById('remote-label').style.color = isRemoteWork ? 'var(--accent)' : 'var(--muted)';
+    document.getElementById('remote-label').style.fontWeight = isRemoteWork ? '700' : 'normal';
+  }
   let pendingAction = null;
 
   function updateClock() {
@@ -1163,6 +1193,17 @@
       formData.append(FORM_ENTRIES.lat,       lat);
       formData.append(FORM_ENTRIES.lng,       lng);
       await fetch(FORM_URL, { method: 'POST', mode: 'no-cors', body: formData });
+      // 在宅勤務トグルON かつ 出勤打刻 → S列に記録
+      if (label === '出勤' && isRemoteWork) {
+        fetch(FORM_GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            requestType: 'remoteWork',
+            empId: currentUser.id,
+            date:  d,
+          })
+        }).catch(() => {});
+      }
       showToast(`${label}打刻しました（${t.slice(0,5)}）`);
       savePunchState();
       // 退勤打刻時は残業申請状態をリセット
