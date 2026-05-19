@@ -685,6 +685,31 @@
     </div>
   </div>
 
+  <!-- 休日出勤申請 -->
+  <div class="apply-card">
+    <div class="apply-header" id="holiday-work-header" onclick="toggleHolidayWork()">
+      <div class="apply-header-left">
+        <div class="apply-badge" style="background:var(--red)">休出</div>
+        <div class="apply-title">休日出勤申請</div>
+      </div>
+      <span class="apply-chevron" id="holiday-work-chevron">▾</span>
+    </div>
+    <div class="apply-body" id="holiday-work-body">
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;">
+        土日祝の出勤を申請します。<br>申請後、上長が承認すると勤務表に反映されます。
+      </div>
+      <div>
+        <div class="field-label" style="margin-bottom:6px">対象日付</div>
+        <input class="field-input-date" id="holiday-work-date" type="date" style="width:100%">
+      </div>
+      <div class="work-field">
+        <div class="field-label">申請理由（必須）</div>
+        <textarea class="work-input" id="holiday-work-reason" placeholder="申請理由を記入してください" style="min-height:60px"></textarea>
+      </div>
+      <button class="apply-submit" style="background:var(--red)" onclick="openHolidayWorkModal()">申請する</button>
+    </div>
+  </div>
+
   <!-- 打刻修正申請 -->
   <div class="apply-card">
     <div class="apply-header" id="correct-header" onclick="toggleCorrect()">
@@ -904,6 +929,27 @@
   </div>
 </div>
 
+<!-- 休日出勤申請確認モーダル -->
+<div class="modal-backdrop" id="holiday-work-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">休日出勤申請の確認</div>
+    <div class="modal-sub">以下の内容で申請します</div>
+    <div class="modal-info">
+      <div class="modal-row"><span class="modal-row-label">氏名</span><span class="modal-row-value jp" id="hwm-name"></span></div>
+      <div class="modal-row"><span class="modal-row-label">対象日</span><span class="modal-row-value" id="hwm-date"></span></div>
+      <div class="modal-row"><span class="modal-row-label">申請理由</span><span class="modal-row-value jp" id="hwm-reason"></span></div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6;">
+      申請後、上長の承認が必要です。<br>承認されると勤務表に自動反映されます。
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal('holiday-work-modal')">キャンセル</button>
+      <button class="modal-confirm" style="background:var(--red)" onclick="doHolidayWork()">申請する</button>
+    </div>
+  </div>
+</div>
+
 <!-- 勤務表PDF送信確認モーダル -->
 <div class="modal-backdrop" id="timesheet-pdf-modal">
   <div class="modal">
@@ -981,6 +1027,10 @@
     const correctDateEl = document.getElementById('correct-date');
     correctDateEl.max   = today;
     correctDateEl.value = today;
+    // 休日出勤：本日以降（事前申請可）
+    const holidayWorkDateEl = document.getElementById('holiday-work-date');
+    holidayWorkDateEl.min   = today;
+    holidayWorkDateEl.value = today;
   }
 
   // ======== 打刻状態の保存・復元（0時にリセット） ========
@@ -1326,6 +1376,56 @@
       </div>
       <div class="history-time">${time}</div>`;
     list.appendChild(item);
+  }
+
+  // ======== 休日出勤申請 ========
+  function toggleHolidayWork() {
+    const body    = document.getElementById('holiday-work-body');
+    const chevron = document.getElementById('holiday-work-chevron');
+    const header  = document.getElementById('holiday-work-header');
+    const open    = body.classList.contains('open');
+    body.classList.toggle('open', !open);
+    chevron.classList.toggle('open', !open);
+    header.classList.toggle('open', !open);
+  }
+
+  function openHolidayWorkModal() {
+    const dateVal  = document.getElementById('holiday-work-date').value;
+    const reason   = document.getElementById('holiday-work-reason').value.trim();
+    if (!dateVal)  { showToast('対象日付を選択してください'); return; }
+    if (!reason)   { showToast('申請理由を入力してください'); return; }
+    document.getElementById('hwm-name').textContent   = currentUser.name;
+    document.getElementById('hwm-date').textContent   = dateVal.replace(/-/g,'/');
+    document.getElementById('hwm-reason').textContent = reason;
+    document.getElementById('holiday-work-modal').classList.add('show');
+  }
+
+  async function doHolidayWork() {
+    const dateVal = document.getElementById('holiday-work-date').value;
+    const reason  = document.getElementById('holiday-work-reason').value.trim();
+    closeModal('holiday-work-modal');
+    showToast('休日出勤を申請中...');
+    try {
+      const res = await fetch(FORM_GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          requestType: 'holidayWork',
+          empId:       currentUser.id,
+          empName:     currentUser.name,
+          targetDate:  dateVal.replace(/-/g,'/'),
+          reason,
+        })
+      });
+      const data = await res.json();
+      showToast(data.status === 'ok'
+        ? '休日出勤申請を送信しました'
+        : `⚠️ 送信エラー：${data.message}`
+      );
+    } catch(err) {
+      showToast('⚠️ 通信エラー。後で再送してください。');
+    }
+    document.getElementById('holiday-work-date').value   = '';
+    document.getElementById('holiday-work-reason').value = '';
   }
 
   // ======== 打刻修正申請 ========
@@ -1796,6 +1896,7 @@
   document.getElementById('apply-modal').addEventListener('click',   function(e) { if (e.target===this) closeModal('apply-modal'); });
   document.getElementById('correct-modal').addEventListener('click', function(e) { if (e.target===this) closeModal('correct-modal'); });
   document.getElementById('timesheet-pdf-modal').addEventListener('click', function(e) { if (e.target===this) closeModal('timesheet-pdf-modal'); });
+  document.getElementById('holiday-work-modal').addEventListener('click', function(e) { if (e.target===this) closeModal('holiday-work-modal'); });
 </script>
 </body>
 </html>
