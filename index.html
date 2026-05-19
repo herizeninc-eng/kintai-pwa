@@ -169,16 +169,15 @@
   .section-label { font-size: 12px; color: var(--muted); font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 10px; }
 
   /* ======== 勤務種別 ======== */
-  .type-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .type-btn {
-    background: var(--surface); border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm); color: var(--muted);
-    font-family: 'Noto Sans JP', sans-serif; font-size: 12px; font-weight: 500;
-    padding: 11px 4px; cursor: pointer; transition: all 0.2s; text-align: center; line-height: 1.3;
+  select.work-input {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 18px;
+    padding-right: 40px;
   }
-  .type-btn.wide { grid-column: span 2; }
-  .type-btn.selected { background: rgba(91,110,245,0.12); border-color: var(--accent); color: var(--accent2); }
-  .type-btn:active { transform: scale(0.95); }
+  select.work-input option { background: var(--surface2); color: var(--text); }
 
   /* ======== 打刻ボタン ======== */
   .punch-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -505,18 +504,19 @@
   <!-- 勤務種別 -->
   <div>
     <div class="section-label">種別</div>
-    <div class="type-grid">
-      <button class="type-btn selected" style="grid-column:1/-1" data-type="通常"     onclick="selectType(this)">通常</button>
-      <button class="type-btn"          style="grid-column:1/-1" data-type="フレックス" onclick="selectType(this)">フレックス</button>
-      <button class="type-btn"               data-type="早出"     onclick="selectType(this)">早出</button>
-      <button class="type-btn"               data-type="遅出"     onclick="selectType(this)">遅出</button>
-      <button class="type-btn"               data-type="有給(午前)" onclick="selectType(this)">有給(午前)</button>
-      <button class="type-btn"               data-type="有給(午後)" onclick="selectType(this)">有給(午後)</button>
-      <button class="type-btn"               data-type="振休(午前)" onclick="selectType(this)">振休(午前)</button>
-      <button class="type-btn"               data-type="振休(午後)" onclick="selectType(this)">振休(午後)</button>
-      <button class="type-btn"               data-type="代休(午前)" onclick="selectType(this)">代休(午前)</button>
-      <button class="type-btn"               data-type="代休(午後)" onclick="selectType(this)">代休(午後)</button>
-    </div>
+    <select class="work-input" id="type-select" onchange="selectedType = this.value">
+      <option value="">選択してください</option>
+      <option value="通常">通常</option>
+      <option value="フレックス">フレックス</option>
+      <option value="早出">早出</option>
+      <option value="遅出">遅出</option>
+      <option value="有給(午前)">有給(午前)</option>
+      <option value="有給(午後)">有給(午後)</option>
+      <option value="振休(午前)">振休(午前)</option>
+      <option value="振休(午後)">振休(午後)</option>
+      <option value="代休(午前)">代休(午前)</option>
+      <option value="代休(午後)">代休(午後)</option>
+    </select>
   </div>
 
   <!-- 打刻ボタン -->
@@ -678,8 +678,8 @@
         <div class="work-note" style="margin-top:2px">※1日の場合は開始日と終了日を同じ日付にしてください</div>
       </div>
       <div class="work-field">
-        <div class="field-label">備考（任意）</div>
-        <textarea class="work-input" id="apply-note" placeholder="理由や補足があれば記入" style="min-height:60px"></textarea>
+        <div class="field-label">備考（必須）</div>
+        <textarea class="work-input" id="apply-note" placeholder="理由や補足を記入してください" style="min-height:60px"></textarea>
       </div>
       <button class="apply-submit" onclick="openApplyModal()">申請する</button>
     </div>
@@ -994,7 +994,7 @@
   };
 
   let currentUser = null;
-  let selectedType = '通常';
+  let selectedType = '';
   let selectedApplyType = null;
   let selectedCorrectType = '出勤';
   let isRemoteWork = false;
@@ -1082,9 +1082,8 @@
     // 種別を復元
     if (state.punchType) {
       selectedType = state.punchType;
-      document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
-      const btn = document.querySelector(`[data-type="${state.punchType}"]`);
-      if (btn) btn.classList.add('selected');
+      const sel = document.getElementById('type-select');
+      if (sel) sel.value = state.punchType;
     }
   }
 
@@ -1132,7 +1131,9 @@
   }
 
   function doLogout() {
-    currentUser = null; selectedType = '通常'; selectedApplyType = null;
+    currentUser = null; selectedType = ''; selectedApplyType = null;
+    const sel = document.getElementById('type-select');
+    if (sel) sel.value = '';
     document.getElementById('punch-screen').style.display = 'none';
     document.getElementById('login-screen').style.display = 'flex';
     ['emp-id','work-dept','work-content','apply-note'].forEach(id => document.getElementById(id).value = '');
@@ -1142,18 +1143,13 @@
     document.getElementById('status-checkout').className = 'status-value';
     document.getElementById('history-list').innerHTML =
       '<div style="color:var(--muted);font-size:13px;padding:8px 0">まだ打刻がありません</div>';
-    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
-    document.querySelector('[data-type="通常"]').classList.add('selected');
+    selectedType = '';
+    const typeSelect = document.getElementById('type-select');
+    if (typeSelect) typeSelect.value = '';
     document.querySelectorAll('.apply-btn').forEach(b => b.classList.remove('selected'));
     document.getElementById('btn-checkin').disabled  = false;
     document.getElementById('btn-checkout').disabled = false;
     if (document.getElementById('apply-body').classList.contains('open')) toggleApply();
-  }
-
-  function selectType(el) {
-    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
-    el.classList.add('selected');
-    selectedType = el.dataset.type;
   }
 
   function selectApply(el) {
@@ -1173,6 +1169,7 @@
   }
 
   function openPunchModal(action) {
+    if (action === 'checkin' && !selectedType) { showToast('種別を選択してください'); return; }
     const dept = document.getElementById('work-dept').value;
     const cont = document.getElementById('work-content').value.trim();
 
@@ -1303,6 +1300,8 @@
     const startVal = document.getElementById('apply-date-start').value;
     const endVal   = document.getElementById('apply-date-end').value;
     if (!startVal || !endVal) { showToast('申請日を選択してください'); return; }
+    const noteVal = document.getElementById('apply-note').value.trim();
+    if (!noteVal) { showToast('備考を入力してください'); return; }
     const nowA = new Date();
     const today = `${nowA.getFullYear()}-${String(nowA.getMonth()+1).padStart(2,'0')}-${String(nowA.getDate()).padStart(2,'0')}`;
     if (startVal < today) { showToast('本日以降の日付を選択してください'); return; }
