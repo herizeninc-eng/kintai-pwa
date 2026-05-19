@@ -492,23 +492,31 @@
     </div>
   </div>
 
-  <!-- 勤務種別 -->
-  <div>
-    <div class="section-label">種別</div>
-    <select class="work-input" id="type-select" onchange="selectedType = this.value">
-      <option value="">選択してください</option>
-      <option value="通常">通常</option>
-      <option value="在宅">在宅</option>
-      <option value="フレックス">フレックス</option>
-      <option value="早出">早出</option>
-      <option value="遅出">遅出</option>
-      <option value="有給(午前)">有給(午前)</option>
-      <option value="有給(午後)">有給(午後)</option>
-      <option value="振休(午前)">振休(午前)</option>
-      <option value="振休(午後)">振休(午後)</option>
-      <option value="代休(午前)">代休(午前)</option>
-      <option value="代休(午後)">代休(午後)</option>
-    </select>
+  <!-- 勤務種別 + 在宅トグル -->
+  <div style="display:flex;align-items:flex-end;gap:12px;">
+    <div style="flex:1;">
+      <div class="section-label">種別</div>
+      <select class="work-input" id="type-select" onchange="selectedType = this.value">
+        <option value="">選択してください</option>
+        <option value="通常">通常</option>
+        <option value="フレックス">フレックス</option>
+        <option value="早出">早出</option>
+        <option value="遅出">遅出</option>
+        <option value="有給(午前)">有給(午前)</option>
+        <option value="有給(午後)">有給(午後)</option>
+        <option value="振休(午前)">振休(午前)</option>
+        <option value="振休(午後)">振休(午後)</option>
+        <option value="代休(午前)">代休(午前)</option>
+        <option value="代休(午後)">代休(午後)</option>
+      </select>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;padding-bottom:3px;">
+      <span style="font-size:11px;color:var(--muted);white-space:nowrap;" id="remote-label">在宅</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="remote-toggle" onchange="onRemoteToggle(this)">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
   </div>
 
   <!-- 打刻ボタン -->
@@ -990,7 +998,24 @@
   let selectedType = '';
   let selectedApplyType = null;
   let selectedCorrectType = '出勤';
+  let isRemoteWork = false;
   let pendingAction = null;
+
+  function onRemoteToggle(el) {
+    isRemoteWork = el.checked;
+    const lbl = document.getElementById('remote-label');
+    lbl.style.color      = isRemoteWork ? 'var(--accent)' : 'var(--muted)';
+    lbl.style.fontWeight = isRemoteWork ? '700' : 'normal';
+  }
+
+  // フラグ3（社長）チェック
+  function checkPresident() {
+    if (currentUser && currentUser.flag === 3) {
+      showToast('取締役社長にはこの操作は必要ありません');
+      return true;
+    }
+    return false;
+  }
 
   function updateClock() {
     const now = new Date();
@@ -1089,7 +1114,7 @@
       const data = await res.json();
 
       if (data.status === 'ok') {
-        currentUser = { id: data.empId, name: data.empName, dept: data.dept };
+        currentUser = { id: data.empId, name: data.empName, dept: data.dept, flag: data.flag || 1 };
         err.classList.remove('show');
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('punch-screen').style.display = 'flex';
@@ -1117,9 +1142,11 @@
   }
 
   function doLogout() {
-    currentUser = null; selectedType = ''; selectedApplyType = null;
+    currentUser = null; selectedType = ''; selectedApplyType = null; isRemoteWork = false;
     const sel = document.getElementById('type-select');
     if (sel) sel.value = '';
+    const rt = document.getElementById('remote-toggle');
+    if (rt) { rt.checked = false; onRemoteToggle(rt); }
     document.getElementById('punch-screen').style.display = 'none';
     document.getElementById('login-screen').style.display = 'flex';
     ['emp-id','work-dept','work-content','apply-note'].forEach(id => document.getElementById(id).value = '');
@@ -1151,6 +1178,7 @@
   }
 
   function openPunchModal(action) {
+    if (checkPresident()) return;
     if (action === 'checkin' && !selectedType) { showToast('種別を選択してください'); return; }
     const dept = document.getElementById('work-dept').value;
     const cont = document.getElementById('work-content').value.trim();
@@ -1253,6 +1281,13 @@
       formData.append(FORM_ENTRIES.lat,       lat);
       formData.append(FORM_ENTRIES.lng,       lng);
       await fetch(FORM_URL, { method: 'POST', mode: 'no-cors', body: formData });
+      // 在宅ONかつ出勤打刻 → 備考欄(R列)に「在宅」を記録
+      if (label === '出勤' && isRemoteWork) {
+        fetch(FORM_GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({ requestType: 'remoteWork', empId: currentUser.id, date: d })
+        }).catch(() => {});
+      }
       showToast(`${label}打刻しました（${t.slice(0,5)}）`);
       savePunchState();
       // 退勤打刻時は残業申請状態をリセット
@@ -1267,6 +1302,7 @@
   }
 
   function openApplyModal() {
+    if (checkPresident()) return;
     if (!selectedApplyType) { showToast('申請種別を選択してください'); return; }
     const startVal = document.getElementById('apply-date-start').value;
     const endVal   = document.getElementById('apply-date-end').value;
@@ -1361,6 +1397,7 @@
   }
 
   function openHolidayWorkModal() {
+    if (checkPresident()) return;
     const dateVal  = document.getElementById('holiday-work-date').value;
     const reason   = document.getElementById('holiday-work-reason').value.trim();
     if (!dateVal)  { showToast('対象日付を選択してください'); return; }
@@ -1417,6 +1454,7 @@
   }
 
   function openCorrectModal() {
+    if (checkPresident()) return;
     const dateVal  = document.getElementById('correct-date').value;
     const timeVal  = document.getElementById('correct-time').value;
     const reason   = document.getElementById('correct-reason').value.trim();
@@ -1469,6 +1507,7 @@
   // ======== 勤務表PDF送信 ========
   function openTimesheetPdfModal() {
     if (!currentUser) { showToast('ログインが必要です'); return; }
+    if (checkPresident()) return;
     document.getElementById('timesheet-pdf-modal').classList.add('show');
   }
 
@@ -1813,6 +1852,7 @@
 
   function openOvertimeModal() {
     if (!currentUser) { showToast('ログインしてください'); return; }
+    if (checkPresident()) return;
     document.getElementById('overtime-modal').classList.add('show');
   }
 
