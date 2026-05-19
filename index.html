@@ -646,15 +646,16 @@
       </div>
       <div>
         <div class="field-label" style="margin-bottom:8px">申請種別</div>
-        <div class="apply-grid">
-          <button class="apply-btn" data-apply="有給" onclick="selectApply(this)">有給</button>
-          <button class="apply-btn" data-apply="振休" onclick="selectApply(this)">振休</button>
-          <button class="apply-btn" data-apply="代休" onclick="selectApply(this)">代休</button>
-          <button class="apply-btn" data-apply="明休" onclick="selectApply(this)">明休</button>
-          <button class="apply-btn" data-apply="欠勤" onclick="selectApply(this)">欠勤</button>
-          <button class="apply-btn" data-apply="特別" onclick="selectApply(this)">特別</button>
-          <button class="apply-btn" data-apply="慶弔" onclick="selectApply(this)">慶弔</button>
-        </div>
+        <select class="work-input" id="apply-type-select" onchange="selectedApplyType = this.value || null">
+          <option value="">選択してください</option>
+          <option value="有給">有給</option>
+          <option value="振休">振休</option>
+          <option value="代休">代休</option>
+          <option value="明休">明休</option>
+          <option value="欠勤">欠勤</option>
+          <option value="特別">特別</option>
+          <option value="慶弔">慶弔</option>
+        </select>
       </div>
       <div>
         <div class="field-label" style="margin-bottom:8px">休暇時間</div>
@@ -1146,17 +1147,13 @@
     selectedType = '';
     const typeSelect = document.getElementById('type-select');
     if (typeSelect) typeSelect.value = '';
-    document.querySelectorAll('.apply-btn').forEach(b => b.classList.remove('selected'));
+    const applyTypeSelect = document.getElementById('apply-type-select');
+    if (applyTypeSelect) applyTypeSelect.value = '';
     document.getElementById('btn-checkin').disabled  = false;
     document.getElementById('btn-checkout').disabled = false;
     if (document.getElementById('apply-body').classList.contains('open')) toggleApply();
   }
 
-  function selectApply(el) {
-    document.querySelectorAll('.apply-btn').forEach(b => b.classList.remove('selected'));
-    el.classList.add('selected');
-    selectedApplyType = el.dataset.apply;
-  }
 
   function toggleApply() {
     const body    = document.getElementById('apply-body');
@@ -1357,7 +1354,8 @@
       showToast('⚠️ 通信エラー。後で再送してください。');
     }
 
-    document.querySelectorAll('.apply-btn').forEach(b => b.classList.remove('selected'));
+    const applyTypeSelect = document.getElementById('apply-type-select');
+    if (applyTypeSelect) applyTypeSelect.value = '';
     document.getElementById('apply-note').value = '';
     document.getElementById('apply-leave-time').value = '全休';
     selectedApplyType = null;
