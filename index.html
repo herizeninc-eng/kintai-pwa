@@ -556,15 +556,6 @@
     </button>
   </div>
 
-  <!-- 残業申請ボタン -->
-  <button class="overtime-btn" onclick="openOvertimeModal()">
-    <span class="overtime-btn-icon">⏰</span>
-    <div class="overtime-btn-text">
-      <span class="overtime-btn-label">残業申請</span>
-      <span class="overtime-btn-sub">18時以降の残業を上長に申請・報告</span>
-    </div>
-  </button>
-
   <!-- 規定外休憩 / 時間外移動 トグル -->
   <div class="toggle-row">
 
@@ -651,6 +642,19 @@
       <div class="field-label">実施内容</div>
       <textarea class="work-input" id="work-content" placeholder="例：顧客訪問、社内会議、現場作業など"></textarea>
       <div class="work-note">打刻と一緒にスプレッドシートに記録されます</div>
+    </div>
+  </div>
+
+  <!-- 勤務表確認 -->
+  <div class="apply-card">
+    <div class="apply-header">
+      <div class="apply-header-left">
+        <div class="apply-badge" style="background:var(--accent);color:#fff">確認</div>
+        <div class="apply-title">勤務表確認</div>
+      </div>
+    </div>
+    <div class="apply-body open">
+      <button class="apply-submit" style="background:var(--accent)" onclick="openTimesheetPdfModal()">📄 PDFをメールに送信する</button>
     </div>
   </div>
 
@@ -788,6 +792,15 @@
     <div style="width:60px;"></div>
   </div>
 
+  <!-- 残業申請 -->
+  <button class="overtime-btn" onclick="openOvertimeModal()">
+    <span class="overtime-btn-icon">⏰</span>
+    <div class="overtime-btn-text">
+      <span class="overtime-btn-label">残業申請</span>
+      <span class="overtime-btn-sub">18時以降の残業を上長に申請・報告</span>
+    </div>
+  </button>
+
   <!-- 休暇・欠勤申請 -->
   <div class="apply-card">
     <div class="apply-header" id="apply-header" onclick="toggleApply()">
@@ -904,18 +917,6 @@
     </div>
   </div>
 
-  <!-- 勤務表確認 -->
-  <div class="apply-card">
-    <div class="apply-header">
-      <div class="apply-header-left">
-        <div class="apply-badge" style="background:var(--accent);color:#fff">確認</div>
-        <div class="apply-title">勤務表確認</div>
-      </div>
-    </div>
-    <div class="apply-body open">
-      <button class="apply-submit" style="background:var(--accent)" onclick="openTimesheetPdfModal()">📄 PDFをメールに送信する</button>
-    </div>
-  </div>
 
 </div>
 
