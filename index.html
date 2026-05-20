@@ -549,7 +549,7 @@
       <span>出勤</span>
       <span class="btn-sub">タップして打刻</span>
     </button>
-    <button class="punch-btn btn-checkout" id="btn-checkout" onclick="openPunchModal('checkout')">
+    <button class="punch-btn btn-checkout" id="btn-checkout" onclick="openPunchModal('checkout')" disabled>
       <span class="btn-icon">■</span>
       <span>退勤</span>
       <span class="btn-sub">タップして打刻</span>
@@ -642,19 +642,6 @@
       <div class="field-label">実施内容</div>
       <textarea class="work-input" id="work-content" placeholder="例：顧客訪問、社内会議、現場作業など"></textarea>
       <div class="work-note">打刻と一緒にスプレッドシートに記録されます</div>
-    </div>
-  </div>
-
-  <!-- 勤務表確認 -->
-  <div class="apply-card">
-    <div class="apply-header">
-      <div class="apply-header-left">
-        <div class="apply-badge" style="background:var(--accent);color:#fff">確認</div>
-        <div class="apply-title">勤務表確認</div>
-      </div>
-    </div>
-    <div class="apply-body open">
-      <button class="apply-submit" style="background:var(--accent)" onclick="openTimesheetPdfModal()">📄 PDFをメールに送信する</button>
     </div>
   </div>
 
@@ -839,11 +826,11 @@
         <div style="display:flex;flex-direction:column;gap:8px">
           <div>
             <div class="field-label" style="margin-bottom:6px">開始日</div>
-            <input class="field-input-date" id="apply-date-start" type="date" style="width:100%">
+            <input class="field-input-date" id="apply-date-start" type="date" style="width:100%" onchange="validateApplyDate(this)">
           </div>
           <div>
             <div class="field-label" style="margin-bottom:6px">終了日</div>
-            <input class="field-input-date" id="apply-date-end" type="date" style="width:100%">
+            <input class="field-input-date" id="apply-date-end" type="date" style="width:100%" onchange="validateApplyDate(this)">
           </div>
         </div>
         <div class="work-note" style="margin-top:2px">※1日の場合は開始日と終了日を同じ日付にしてください</div>
@@ -878,6 +865,19 @@
         <textarea class="work-input" id="holiday-work-reason" placeholder="申請理由を記入してください" style="min-height:60px"></textarea>
       </div>
       <button class="apply-submit" style="background:var(--red)" onclick="openHolidayWorkModal()">申請する</button>
+    </div>
+  </div>
+
+  <!-- 勤務表確認 -->
+  <div class="apply-card">
+    <div class="apply-header">
+      <div class="apply-header-left">
+        <div class="apply-badge" style="background:var(--accent);color:#fff">確認</div>
+        <div class="apply-title">勤務表確認</div>
+      </div>
+    </div>
+    <div class="apply-body open">
+      <button class="apply-submit" style="background:var(--accent)" onclick="openTimesheetPdfModal()">📄 PDFをメールに送信する</button>
     </div>
   </div>
 
@@ -1121,8 +1121,9 @@
       document.getElementById('status-checkout').textContent = state.checkout;
       document.getElementById('status-checkout').className   = 'status-value recorded';
     }
-    document.getElementById('btn-checkin').disabled  = state.checkinDone;
-    document.getElementById('btn-checkout').disabled = state.checkoutDone;
+    document.getElementById('btn-checkin').disabled  = state.checkinDone  || false;
+    // 退勤ボタン：出勤済み かつ 退勤未完了の場合のみ有効
+    document.getElementById('btn-checkout').disabled = !(state.checkinDone && !state.checkoutDone);
     if (state.history) document.getElementById('history-list').innerHTML = state.history;
     if (state.breakTime && state.breakTime !== '──') document.getElementById('break-time').textContent = state.breakTime;
     if (state.moveTime  && state.moveTime  !== '──') document.getElementById('move-time').textContent  = state.moveTime;
@@ -1209,7 +1210,7 @@
     const applyTypeSelect = document.getElementById('apply-type-select');
     if (applyTypeSelect) applyTypeSelect.value = '';
     document.getElementById('btn-checkin').disabled  = false;
-    document.getElementById('btn-checkout').disabled = false;
+    document.getElementById('btn-checkout').disabled = true;
     if (document.getElementById('apply-body').classList.contains('open')) toggleApply();
   }
 
@@ -1309,6 +1310,8 @@
     document.getElementById(sid).textContent = t.slice(0,5);
     document.getElementById(sid).className   = 'status-value recorded';
     document.getElementById(bid).disabled    = true;
+    // 出勤打刻後は退勤ボタンを有効化
+    if (label === '出勤') document.getElementById('btn-checkout').disabled = false;
     addHistory(label, selectedType, t, color);
     closeModal('punch-modal');
     showToast(`${label}打刻中...`);
@@ -1348,12 +1351,27 @@
     }
   }
 
+  function validateApplyDate(el) {
+    if (!el.value) return;
+    const d = new Date(el.value + 'T00:00:00');
+    const dow = d.getDay();
+    if (dow === 0 || dow === 6) {
+      showToast('土日は申請できません');
+      el.value = '';
+    }
+  }
+
   function openApplyModal() {
     if (checkPresident()) return;
     if (!selectedApplyType) { showToast('申請種別を選択してください'); return; }
     const startVal = document.getElementById('apply-date-start').value;
     const endVal   = document.getElementById('apply-date-end').value;
     if (!startVal || !endVal) { showToast('申請日を選択してください'); return; }
+    // 土日チェック（念のため再確認）
+    const startDow = new Date(startVal + 'T00:00:00').getDay();
+    const endDow   = new Date(endVal   + 'T00:00:00').getDay();
+    if (startDow === 0 || startDow === 6) { showToast('開始日に土日は選択できません'); document.getElementById('apply-date-start').value = ''; return; }
+    if (endDow   === 0 || endDow   === 6) { showToast('終了日に土日は選択できません'); document.getElementById('apply-date-end').value   = ''; return; }
     const noteVal = document.getElementById('apply-note').value.trim();
     if (!noteVal) { showToast('備考を入力してください'); return; }
     const nowA = new Date();
@@ -1671,6 +1689,8 @@
         document.getElementById('status-checkin').textContent = data.checkin.slice(0,5);
         document.getElementById('status-checkin').className   = 'status-value recorded';
         document.getElementById('btn-checkin').disabled       = true;
+        // 出勤済みなら退勤ボタンを有効化
+        document.getElementById('btn-checkout').disabled      = false;
       }
 
       // 退勤データがあれば反映
