@@ -519,7 +519,7 @@
   <div style="display:flex;align-items:flex-end;gap:12px;">
     <div style="flex:1;">
       <div class="section-label">種別</div>
-      <select class="work-input" id="type-select" onchange="selectedType = this.value">
+      <select class="work-input" id="type-select" onchange="selectedType = this.value; saveTypeSelection(this.value)">
         <option value="">選択してください</option>
         <option value="通常">通常</option>
         <option value="フレックス">フレックス</option>
@@ -621,7 +621,7 @@
     <div class="section-label" style="margin-bottom:0">稼働情報（必須）</div>
     <div class="work-field">
       <div class="field-label">稼働部門</div>
-      <select class="work-input" id="work-dept" style="-webkit-appearance:none;appearance:none;cursor:pointer;">
+      <select class="work-input" id="work-dept" style="-webkit-appearance:none;appearance:none;cursor:pointer;" onchange="saveDeptSelection(this.value)">
         <option value="">選択してください</option>
         <option value="ネットワーク1G">ネットワーク1G</option>
         <option value="ネットワーク2G">ネットワーク2G</option>
@@ -1305,6 +1305,7 @@
         loadPunchState();
         loadOvertimeStateOnLogin();  // 残業申請状態を復元
         fetchTodayPunchStatus();  // サーバーから当日打刻状況を取得
+        restoreSavedSelections();  // 種別・稼働部門を復元
       } else {
         err.classList.remove('show');
         void err.offsetWidth;
@@ -2184,6 +2185,29 @@
     btn.querySelector('.overtime-btn-icon').textContent = '⏰';
     btn.querySelector('.overtime-btn-label').textContent = '残業申請';
     btn.querySelector('.overtime-btn-sub').textContent = '18時以降の残業を上長に申請・報告';
+  }
+
+  // 種別・稼働部門の選択を保存（通常/フレックスのみ種別を記憶）
+  function saveTypeSelection(val) {
+    if (val === '通常' || val === 'フレックス') {
+      localStorage.setItem('savedWorkType', val);
+    }
+  }
+  function saveDeptSelection(val) {
+    if (val) localStorage.setItem('savedWorkDept', val);
+  }
+  // ログイン時に前回の選択を復元
+  function restoreSavedSelections() {
+    const savedType = localStorage.getItem('savedWorkType');
+    const savedDept = localStorage.getItem('savedWorkDept');
+    if (savedType) {
+      const typeSelect = document.getElementById('type-select');
+      typeSelect.value = savedType;
+      selectedType = savedType;
+    }
+    if (savedDept) {
+      document.getElementById('work-dept').value = savedDept;
+    }
   }
 
   // ログイン時に残業申請状態を復元
