@@ -868,6 +868,124 @@
     </div>
   </div>
 
+  <!-- 在宅申請 -->
+  <div class="apply-card">
+    <div class="apply-header" id="wfh-header" onclick="toggleWFH()">
+      <div class="apply-header-left">
+        <div class="apply-badge" style="background:#2196F3;color:#fff">在宅</div>
+        <div class="apply-title">在宅申請</div>
+      </div>
+      <span class="apply-chevron" id="wfh-chevron">▾</span>
+    </div>
+    <div class="apply-body" id="wfh-body">
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;">
+        在宅勤務の申請をします。<br>申請後、上長が承認/却下するとメールで通知されます。
+      </div>
+
+      <!-- 1. 業務内容（必須） -->
+      <div>
+        <div class="field-label" style="margin-bottom:8px">1. 業務内容（必須）</div>
+        <textarea class="work-input" id="wfh-work-content" placeholder="在宅で行う業務内容を記載してください" style="min-height:60px"></textarea>
+      </div>
+
+      <!-- 2. 就業期間・時間・頻度 -->
+      <div>
+        <div class="field-label" style="margin-bottom:8px">2. 就業期間・時間・頻度</div>
+
+        <!-- 日付指定方法 -->
+        <div style="margin-bottom:10px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">日付指定方法</div>
+          <div style="display:flex;gap:8px">
+            <button class="apply-btn selected" id="wfh-type-single" onclick="selectWFHType('single')" style="flex:1">単日</button>
+            <button class="apply-btn"          id="wfh-type-range"  onclick="selectWFHType('range')"  style="flex:1">期間指定</button>
+            <button class="apply-btn"          id="wfh-type-weekly" onclick="selectWFHType('weekly')" style="flex:1">毎週</button>
+          </div>
+        </div>
+
+        <!-- 単日 -->
+        <div id="wfh-single-area" style="margin-bottom:10px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">対象日</div>
+          <input class="field-input-date" id="wfh-single-date" type="date" style="width:100%">
+        </div>
+
+        <!-- 期間指定 -->
+        <div id="wfh-range-area" style="display:none;margin-bottom:10px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:6px">開始日</div>
+              <input class="field-input-date" id="wfh-range-start" type="date" style="width:100%">
+            </div>
+            <div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:6px">終了日</div>
+              <input class="field-input-date" id="wfh-range-end" type="date" style="width:100%">
+            </div>
+          </div>
+        </div>
+
+        <!-- 毎週〇曜日 -->
+        <div id="wfh-weekly-area" style="display:none;margin-bottom:10px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">曜日を選択</div>
+          <div style="display:flex;gap:6px;margin-bottom:10px">
+            <button class="apply-btn" id="wfh-dow-1" onclick="toggleWFHDow(1)" style="flex:1;min-width:0">月</button>
+            <button class="apply-btn" id="wfh-dow-2" onclick="toggleWFHDow(2)" style="flex:1;min-width:0">火</button>
+            <button class="apply-btn" id="wfh-dow-3" onclick="toggleWFHDow(3)" style="flex:1;min-width:0">水</button>
+            <button class="apply-btn" id="wfh-dow-4" onclick="toggleWFHDow(4)" style="flex:1;min-width:0">木</button>
+            <button class="apply-btn" id="wfh-dow-5" onclick="toggleWFHDow(5)" style="flex:1;min-width:0">金</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:6px">適用開始日</div>
+              <input class="field-input-date" id="wfh-weekly-start" type="date" style="width:100%">
+            </div>
+            <div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:6px">適用終了日（任意）</div>
+              <input class="field-input-date" id="wfh-weekly-end" type="date" style="width:100%">
+            </div>
+          </div>
+        </div>
+
+        <!-- 時間（任意） -->
+        <div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">時間（任意）</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input class="field-input-date" id="wfh-time-start" type="time" style="flex:1">
+            <span style="color:var(--muted);font-size:14px">〜</span>
+            <input class="field-input-date" id="wfh-time-end" type="time" style="flex:1">
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. 就業場所 -->
+      <div>
+        <div class="field-label" style="margin-bottom:8px">3. 就業場所</div>
+        <select class="work-input" id="wfh-location" onchange="onWFHLocationChange()">
+          <option value="">選択してください</option>
+          <option value="自宅">自宅</option>
+          <option value="自宅に準じる場所">自宅に準じる場所</option>
+        </select>
+        <div id="wfh-location-detail-area" style="display:none;margin-top:8px">
+          <textarea class="work-input" id="wfh-location-detail" placeholder="就業場所を具体的に記載してください（必須）" style="min-height:48px"></textarea>
+        </div>
+      </div>
+
+      <!-- 4. 申請理由 -->
+      <div>
+        <div class="field-label" style="margin-bottom:8px">4. 申請理由</div>
+        <select class="work-input" id="wfh-reason-type" onchange="onWFHReasonChange()">
+          <option value="">選択してください</option>
+          <option value="育児">育児</option>
+          <option value="介護">介護</option>
+          <option value="その他">その他</option>
+        </select>
+        <div id="wfh-reason-detail-area" style="display:none;margin-top:8px">
+          <textarea class="work-input" id="wfh-reason-detail" placeholder="具体的な理由を記載してください（必須）" style="min-height:48px"></textarea>
+        </div>
+      </div>
+
+      <button class="apply-submit" style="background:#2196F3" onclick="openWFHModal()">申請する</button>
+    </div>
+  </div>
+
   <!-- 勤務表確認 -->
   <div class="apply-card">
     <div class="apply-header">
@@ -983,6 +1101,30 @@
     <div class="modal-btns">
       <button class="modal-cancel" onclick="closeModal('holiday-work-modal')">キャンセル</button>
       <button class="modal-confirm" style="background:var(--red)" onclick="doHolidayWork()">申請する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 在宅申請確認モーダル -->
+<div class="modal-backdrop" id="wfh-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">在宅申請の確認</div>
+    <div class="modal-sub">以下の内容で申請します</div>
+    <div class="modal-info">
+      <div class="modal-row"><span class="modal-row-label">氏名</span><span class="modal-row-value jp" id="wfhm-name"></span></div>
+      <div class="modal-row"><span class="modal-row-label">業務内容</span><span class="modal-row-value jp" id="wfhm-content"></span></div>
+      <div class="modal-row"><span class="modal-row-label">対象日</span><span class="modal-row-value" id="wfhm-date"></span></div>
+      <div class="modal-row" id="wfhm-time-row" style="display:none"><span class="modal-row-label">時間</span><span class="modal-row-value" id="wfhm-time"></span></div>
+      <div class="modal-row"><span class="modal-row-label">就業場所</span><span class="modal-row-value jp" id="wfhm-location"></span></div>
+      <div class="modal-row"><span class="modal-row-label">申請理由</span><span class="modal-row-value jp" id="wfhm-reason"></span></div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6;">
+      申請後、上長の承認/却下がメールで通知されます。
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal('wfh-modal')">キャンセル</button>
+      <button class="modal-confirm" style="background:#2196F3" onclick="doWFH()">申請する</button>
     </div>
   </div>
 </div>
@@ -1499,6 +1641,196 @@
     }
     document.getElementById('holiday-work-date').value   = '';
     document.getElementById('holiday-work-reason').value = '';
+  }
+
+  // ======== 在宅申請 ========
+  let wfhDateType     = 'single';
+  let wfhSelectedDays = new Set();
+
+  function toggleWFH() {
+    const body    = document.getElementById('wfh-body');
+    const chevron = document.getElementById('wfh-chevron');
+    const header  = document.getElementById('wfh-header');
+    const open    = body.classList.contains('open');
+    body.classList.toggle('open', !open);
+    chevron.classList.toggle('open', !open);
+    header.classList.toggle('open', !open);
+  }
+
+  function selectWFHType(type) {
+    wfhDateType = type;
+    ['single','range','weekly'].forEach(t => {
+      document.getElementById('wfh-type-' + t).classList.toggle('selected', t === type);
+    });
+    document.getElementById('wfh-single-area').style.display = type === 'single' ? '' : 'none';
+    document.getElementById('wfh-range-area').style.display  = type === 'range'  ? '' : 'none';
+    document.getElementById('wfh-weekly-area').style.display = type === 'weekly' ? '' : 'none';
+  }
+
+  function toggleWFHDow(dow) {
+    const btn = document.getElementById('wfh-dow-' + dow);
+    if (wfhSelectedDays.has(dow)) {
+      wfhSelectedDays.delete(dow);
+      btn.classList.remove('selected');
+    } else {
+      wfhSelectedDays.add(dow);
+      btn.classList.add('selected');
+    }
+  }
+
+  function onWFHLocationChange() {
+    const val = document.getElementById('wfh-location').value;
+    document.getElementById('wfh-location-detail-area').style.display =
+      val === '自宅に準じる場所' ? '' : 'none';
+  }
+
+  function onWFHReasonChange() {
+    const val = document.getElementById('wfh-reason-type').value;
+    document.getElementById('wfh-reason-detail-area').style.display =
+      val === 'その他' ? '' : 'none';
+  }
+
+  function openWFHModal() {
+    if (checkPresident()) return;
+
+    // --- 業務内容バリデーション ---
+    const workContent = document.getElementById('wfh-work-content').value.trim();
+    if (!workContent) { showToast('業務内容を入力してください'); return; }
+
+    // --- 日付バリデーション＆表示テキスト生成 ---
+    const DOW_NAMES = ['', '月', '火', '水', '木', '金'];
+    let dateDisplayText = '';
+    if (wfhDateType === 'single') {
+      const v = document.getElementById('wfh-single-date').value;
+      if (!v) { showToast('対象日を選択してください'); return; }
+      dateDisplayText = v.replace(/-/g,'/');
+    } else if (wfhDateType === 'range') {
+      const s = document.getElementById('wfh-range-start').value;
+      const e = document.getElementById('wfh-range-end').value;
+      if (!s || !e) { showToast('開始日と終了日を選択してください'); return; }
+      if (e < s)    { showToast('終了日は開始日以降を選択してください'); return; }
+      dateDisplayText = s.replace(/-/g,'/') + ' 〜 ' + e.replace(/-/g,'/');
+    } else {
+      if (wfhSelectedDays.size === 0) { showToast('曜日を選択してください'); return; }
+      const s = document.getElementById('wfh-weekly-start').value;
+      if (!s) { showToast('適用開始日を選択してください'); return; }
+      const e  = document.getElementById('wfh-weekly-end').value;
+      const days = [1,2,3,4,5].filter(d => wfhSelectedDays.has(d)).map(d => DOW_NAMES[d]).join('・');
+      dateDisplayText = '毎週 ' + days + '（' + s.replace(/-/g,'/') + (e ? ' 〜 ' + e.replace(/-/g,'/') : '〜）');
+    }
+
+    // --- 時間 ---
+    const timeStart = document.getElementById('wfh-time-start').value;
+    const timeEnd   = document.getElementById('wfh-time-end').value;
+    const timeText  = (timeStart && timeEnd) ? timeStart + ' 〜 ' + timeEnd : '';
+
+    // --- 就業場所バリデーション ---
+    const location       = document.getElementById('wfh-location').value;
+    const locationDetail = document.getElementById('wfh-location-detail').value.trim();
+    if (!location) { showToast('就業場所を選択してください'); return; }
+    if (location === '自宅に準じる場所' && !locationDetail) {
+      showToast('就業場所の詳細を記載してください'); return;
+    }
+    const locationText = location === '自宅に準じる場所'
+      ? location + '（' + locationDetail + '）'
+      : location;
+
+    // --- 申請理由バリデーション ---
+    const reasonType   = document.getElementById('wfh-reason-type').value;
+    const reasonDetail = document.getElementById('wfh-reason-detail').value.trim();
+    if (!reasonType) { showToast('申請理由を選択してください'); return; }
+    if (reasonType === 'その他' && !reasonDetail) {
+      showToast('理由の詳細を記載してください'); return;
+    }
+    const reasonText = reasonType === 'その他'
+      ? reasonType + '（' + reasonDetail + '）'
+      : reasonType;
+
+    // --- モーダルに反映 ---
+    document.getElementById('wfhm-name').textContent     = currentUser.name;
+    document.getElementById('wfhm-content').textContent  = workContent;
+    document.getElementById('wfhm-date').textContent     = dateDisplayText;
+    document.getElementById('wfhm-location').textContent = locationText;
+    document.getElementById('wfhm-reason').textContent   = reasonText;
+    const timeRow = document.getElementById('wfhm-time-row');
+    if (timeText) {
+      document.getElementById('wfhm-time').textContent = timeText;
+      timeRow.style.display = '';
+    } else {
+      timeRow.style.display = 'none';
+    }
+    document.getElementById('wfh-modal').classList.add('show');
+  }
+
+  async function doWFH() {
+    const DOW_NAMES = ['', '月', '火', '水', '木', '金'];
+    let dateType = wfhDateType;
+    let datePayload = {};
+    if (dateType === 'single') {
+      datePayload.singleDate = document.getElementById('wfh-single-date').value.replace(/-/g,'/');
+    } else if (dateType === 'range') {
+      datePayload.startDate = document.getElementById('wfh-range-start').value.replace(/-/g,'/');
+      datePayload.endDate   = document.getElementById('wfh-range-end').value.replace(/-/g,'/');
+    } else {
+      datePayload.weekDays  = [1,2,3,4,5].filter(d => wfhSelectedDays.has(d)).map(d => DOW_NAMES[d]);
+      datePayload.startDate = document.getElementById('wfh-weekly-start').value.replace(/-/g,'/');
+      datePayload.endDate   = document.getElementById('wfh-weekly-end').value.replace(/-/g,'/') || '';
+    }
+
+    const workContent    = document.getElementById('wfh-work-content').value.trim();
+    const timeStart      = document.getElementById('wfh-time-start').value;
+    const timeEnd        = document.getElementById('wfh-time-end').value;
+    const location       = document.getElementById('wfh-location').value;
+    const locationDetail = document.getElementById('wfh-location-detail').value.trim();
+    const reasonType     = document.getElementById('wfh-reason-type').value;
+    const reasonDetail   = document.getElementById('wfh-reason-detail').value.trim();
+
+    closeModal('wfh-modal');
+    showToast('在宅申請を送信中...');
+    try {
+      const res = await fetch(FORM_GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          requestType:    'wfhRequest',
+          empId:          currentUser.id,
+          empName:        currentUser.name,
+          workContent,
+          dateType,
+          ...datePayload,
+          timeStart,
+          timeEnd,
+          location,
+          locationDetail,
+          reasonType,
+          reasonDetail,
+        })
+      });
+      const data = await res.json();
+      showToast(data.status === 'ok'
+        ? '在宅申請を送信しました'
+        : `⚠️ 送信エラー：${data.message}`
+      );
+    } catch(err) {
+      showToast('⚠️ 通信エラー。後で再送してください。');
+    }
+    // フォームリセット
+    document.getElementById('wfh-work-content').value   = '';
+    document.getElementById('wfh-single-date').value    = '';
+    document.getElementById('wfh-range-start').value    = '';
+    document.getElementById('wfh-range-end').value      = '';
+    document.getElementById('wfh-weekly-start').value   = '';
+    document.getElementById('wfh-weekly-end').value     = '';
+    document.getElementById('wfh-time-start').value     = '';
+    document.getElementById('wfh-time-end').value       = '';
+    document.getElementById('wfh-location').value       = '';
+    document.getElementById('wfh-location-detail').value = '';
+    document.getElementById('wfh-reason-type').value    = '';
+    document.getElementById('wfh-reason-detail').value  = '';
+    document.getElementById('wfh-location-detail-area').style.display = 'none';
+    document.getElementById('wfh-reason-detail-area').style.display   = 'none';
+    wfhSelectedDays.clear();
+    [1,2,3,4,5].forEach(d => document.getElementById('wfh-dow-' + d).classList.remove('selected'));
+    selectWFHType('single');
   }
 
   // ======== 打刻修正申請 ========
