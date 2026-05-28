@@ -640,7 +640,7 @@
     </div>
     <div class="work-field">
       <div class="field-label">実施内容</div>
-      <textarea class="work-input" id="work-content" placeholder="例：顧客訪問、社内会議、現場作業など"></textarea>
+      <textarea class="work-input" id="work-content" placeholder="例：顧客訪問、社内会議、現場作業など" oninput="saveContentSelection(this.value)"></textarea>
       <div class="work-note">打刻と一緒にスプレッドシートに記録されます</div>
     </div>
   </div>
@@ -1340,7 +1340,12 @@
     if (rt) { rt.checked = false; onRemoteToggle(rt); }
     document.getElementById('punch-screen').style.display = 'none';
     document.getElementById('login-screen').style.display = 'flex';
-    ['emp-id','work-dept','work-content','apply-note'].forEach(id => document.getElementById(id).value = '');
+    const STICKY_CONTENT_IDS = ['25', '95'];
+    ['emp-id','work-dept','apply-note'].forEach(id => document.getElementById(id).value = '');
+    // ID 25/95 は実施内容をlocalStorageに保存してからクリアしない
+    if (!STICKY_CONTENT_IDS.includes(String(currentEmpId))) {
+      document.getElementById('work-content').value = '';
+    }
     document.getElementById('status-checkin').textContent  = '──';
     document.getElementById('status-checkout').textContent = '──';
     document.getElementById('status-checkin').className  = 'status-value';
@@ -2196,6 +2201,13 @@
   function saveDeptSelection(val) {
     if (val) localStorage.setItem('savedWorkDept', val);
   }
+  // ID 25/95 のみ実施内容を保存
+  const STICKY_CONTENT_IDS = ['25', '95'];
+  function saveContentSelection(val) {
+    if (STICKY_CONTENT_IDS.includes(String(currentEmpId))) {
+      localStorage.setItem('savedWorkContent_' + currentEmpId, val);
+    }
+  }
   // ログイン時に前回の選択を復元
   function restoreSavedSelections() {
     const savedType = localStorage.getItem('savedWorkType');
@@ -2207,6 +2219,13 @@
     }
     if (savedDept) {
       document.getElementById('work-dept').value = savedDept;
+    }
+    // ID 25/95 のみ実施内容を復元
+    if (STICKY_CONTENT_IDS.includes(String(currentEmpId))) {
+      const savedContent = localStorage.getItem('savedWorkContent_' + currentEmpId);
+      if (savedContent) {
+        document.getElementById('work-content').value = savedContent;
+      }
     }
   }
 
