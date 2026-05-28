@@ -1342,8 +1342,8 @@
     document.getElementById('login-screen').style.display = 'flex';
     const STICKY_CONTENT_IDS = ['25', '95'];
     ['emp-id','work-dept','apply-note'].forEach(id => document.getElementById(id).value = '');
-    // ID 25/95 は実施内容をlocalStorageに保存してからクリアしない
-    if (!STICKY_CONTENT_IDS.includes(String(currentEmpId))) {
+    // ID 25/95 は実施内容をクリアしない
+    if (!STICKY_CONTENT_IDS.includes(String(currentUser && currentUser.id))) {
       document.getElementById('work-content').value = '';
     }
     document.getElementById('status-checkin').textContent  = '──';
@@ -2204,8 +2204,8 @@
   // ID 25/95 のみ実施内容を保存
   const STICKY_CONTENT_IDS = ['25', '95'];
   function saveContentSelection(val) {
-    if (STICKY_CONTENT_IDS.includes(String(currentEmpId))) {
-      localStorage.setItem('savedWorkContent_' + currentEmpId, val);
+    if (currentUser && STICKY_CONTENT_IDS.includes(String(currentUser.id))) {
+      localStorage.setItem('savedWorkContent_' + currentUser.id, val);
     }
   }
   // ログイン時に前回の選択を復元
@@ -2221,8 +2221,8 @@
       document.getElementById('work-dept').value = savedDept;
     }
     // ID 25/95 のみ実施内容を復元
-    if (STICKY_CONTENT_IDS.includes(String(currentEmpId))) {
-      const savedContent = localStorage.getItem('savedWorkContent_' + currentEmpId);
+    if (currentUser && STICKY_CONTENT_IDS.includes(String(currentUser.id))) {
+      const savedContent = localStorage.getItem('savedWorkContent_' + currentUser.id);
       if (savedContent) {
         document.getElementById('work-content').value = savedContent;
       }
